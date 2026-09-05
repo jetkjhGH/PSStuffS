@@ -11,7 +11,8 @@ This repository contains interactive PowerShell utilities for Microsoft 365 educ
 - Reporting scripts require an existing Microsoft Graph session and Exchange Online session. Creation scripts require an existing Graph session. Scripts validate connections but do not call `Connect-MgGraph` or `Connect-ExchangeOnline` themselves.
 - Keep module and scope checks actionable. Graph commands must remain compatible with the Microsoft Graph PowerShell SDK; reporting code using `Get-UnifiedGroup` depends on ExchangeOnlineManagement.
 - Preserve interactive validation loops and the established user-facing output style: `Write-Warning` for recoverable problems, `throw` for blocking prerequisites, and contextual `try`/`catch` around per-item remote operations when continuing is safe.
-- Treat the SDS extension attribute and Graph/SharePoint resource behavior values as tenant-sensitive configuration. Only change these values when the task explicitly requests it; otherwise leave them untouched and call out in your response if a change appears necessary.
+- Never hard-code customer-tenant-specific identifiers in production scripts, including tenant IDs, user object IDs, group object IDs, or subscription IDs. Resolve them from the active tenant, accept them as explicit input, or obtain them through supported Graph queries.
+- Treat the SDS education extension attribute, `Section` marker, and standard SDS `resourceBehaviorOptions` and `creationOptions` as service-defined constants. Preserve their established values in SDS provisioning scripts; do not flag their presence as a defect or recommend replacing them with values observed from Teams-client-created classes unless the task explicitly requests a change to the provisioning behavior.
 - Avoid credential storage, broad retries that hide non-transient errors, and unrelated formatting changes. Keep CSV output paths and columns backward compatible unless the task explicitly changes that contract.
 
 ## Validation

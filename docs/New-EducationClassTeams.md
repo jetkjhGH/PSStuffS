@@ -21,7 +21,7 @@ The script also:
 - Checks proposed display names against existing Microsoft 365 groups.
 - Supports batches of up to 500 Teams.
 - Supports `-WhatIf` and PowerShell confirmation behavior.
-- Reports `Created`, `GroupOnly`, `Failed`, or `WhatIf` for every requested Team.
+- Reports `Created`, `CreatedOwnerPending`, `GroupOnly`, `Failed`, or `WhatIf` for every requested Team.
 
 ## Requirements
 
@@ -146,8 +146,12 @@ The script returns one object per requested Team:
 | `GroupId` | Created Microsoft 365 group ID |
 | `TeamId` | Team ID; normally the same as the group ID |
 | `NameConflict` | Whether the display name existed before creation |
-| `Status` | `Created`, `GroupOnly`, `Failed`, or `WhatIf` |
+| `Status` | `Created`, `CreatedOwnerPending`, `GroupOnly`, `Failed`, or `WhatIf` |
 | `Error` | Failure details, when applicable |
+
+`CreatedOwnerPending` means the Team exists, but assigning the selected owner did not
+complete after bounded retries. Do not recreate the Team; use its reported `TeamId` when
+resolving the owner assignment.
 
 `GroupOnly` means the Unified group exists, but all teamification retries failed. Do not
 recreate that group; use its reported `GroupId` when retrying teamification.

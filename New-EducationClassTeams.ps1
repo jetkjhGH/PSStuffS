@@ -501,7 +501,9 @@ function Get-GroupIdsByDisplayName {
     [OutputType([string[]])]
     param(
         [Parameter(Mandatory)]
-        [string] $DisplayName
+        [string] $DisplayName,
+
+        [switch] $FailOnError
     )
 
     $escaped = $DisplayName.Replace("'", "''")
@@ -512,6 +514,11 @@ function Get-GroupIdsByDisplayName {
     }
     catch {
         Write-Verbose ("Display name lookup failed for '{0}': {1}" -f $DisplayName, $_.Exception.Message)
+
+        if ($FailOnError) {
+            throw
+        }
+
         return @()
     }
 }
@@ -537,7 +544,7 @@ function Test-NameConflict {
     $results = New-Object System.Collections.Generic.List[pscustomobject]
 
     foreach ($name in $Names) {
-        $existingIds = @(Get-GroupIdsByDisplayName -DisplayName $name)
+        $existingIds = @(Get-GroupIdsByDisplayName -DisplayName $name -FailOnError)
 
         $results.Add([pscustomobject]@{
             DisplayName = $name
@@ -823,8 +830,9 @@ function New-ActivatedClassTeam {
 
     if (-not $PSCmdlet.ShouldProcess($DisplayName, 'Create activated class team')) {
         return [pscustomobject]@{
-            GroupId = $null
-            TeamId  = $null
+            GroupId       = $null
+            TeamId        = $null
+            OwnerAssigned = $null
         }
     }
 
@@ -850,11 +858,12 @@ function New-ActivatedClassTeam {
         throw ("Team '{0}' was submitted for creation but its id could not be determined." -f $DisplayName)
     }
 
-    Add-TeamOwner -TeamId $teamId -OwnerId $OwnerId
+    $ownerAssigned = Add-TeamOwner -TeamId $teamId -OwnerId $OwnerId
 
     return [pscustomobject]@{
-        GroupId = $teamId
-        TeamId  = $teamId
+        GroupId       = $teamId
+        TeamId        = $teamId
+        OwnerAssigned = $ownerAssigned
     }
 }
 
@@ -910,11 +919,17 @@ function Add-TeamOwner {
         [string] $TeamId,
 
         [Parameter(Mandatory)]
-        [string] $OwnerId
+        [string] $OwnerId,
+
+        [ValidateRange(1, 5)]
+        [int] $MaxAttempts = 3,
+
+        [ValidateRange(1, 60)]
+        [int] $DelaySeconds = 5
     )
 
     if (-not $PSCmdlet.ShouldProcess($TeamId, 'Add team owner')) {
-        return
+        return $true
     }
 
     $memberParams = @{
@@ -923,7 +938,35 @@ function Add-TeamOwner {
         'user@odata.bind' = "{0}/users('{1}')" -f $script:GraphBaseUri, $OwnerId
     }
 
-    $null = New-MgTeamMember -TeamId $TeamId -BodyParameter $memberParams
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            $null = New-MgTeamMember -TeamId $TeamId -BodyParameter $memberParams -ErrorAction Stop
+            return $true
+        }
+        catch {
+            $message = $_.Exception.Message
+
+            if ($message -match '(?i)already exists|already a member|already an owner') {
+                Write-Verbose ("Owner {0} is already assigned to team {1}." -f $OwnerId, $TeamId)
+                return $true
+            }
+
+            $isTransient = $message -match '(?i)NotFound|404|TooManyRequests|429|ServiceUnavailable|503|GatewayTimeout|504|timed out'
+            if (-not $isTransient) {
+                throw
+            }
+
+            if ($attempt -eq $MaxAttempts) {
+                Write-Warning ("Unable to assign owner {0} to team {1} after {2} attempts: {3}" -f $OwnerId, $TeamId, $MaxAttempts, $message)
+                return $false
+            }
+
+            Write-Host ("  Team owner is not ready yet (attempt {0}/{1}); retrying in {2}s..." -f $attempt, $MaxAttempts, $DelaySeconds) -ForegroundColor DarkYellow
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+
+    return $false
 }
 
 #endregion Team creation
@@ -1054,6 +1097,7 @@ function Invoke-ClassTeamCreation {
             MailNickname = $null
             GroupId      = $null
             TeamId       = $null
+            OwnerAssigned = $null
             NameConflict = ($preExistingIds.Count -gt 0)
             Status       = 'Failed'
             Error        = $null
@@ -1096,9 +1140,14 @@ function Invoke-ClassTeamCreation {
 
                 $result.GroupId = $created.GroupId
                 $result.TeamId = $created.TeamId
+                $result.OwnerAssigned = $created.OwnerAssigned
 
                 if ($WhatIfPreference) {
                     $result.Status = 'WhatIf'
+                }
+                elseif (-not $created.OwnerAssigned) {
+                    $result.Status = 'CreatedOwnerPending'
+                    $result.Error = 'Team was created, but the selected owner could not be assigned.'
                 }
                 else {
                     $result.Status = 'Created'
@@ -1182,7 +1231,8 @@ function Write-ResultSummary {
         [System.Collections.Generic.List[pscustomobject]] $Results
     )
 
-    $createdCount = @($Results | Where-Object { $_.Status -eq 'Created' }).Count
+    $createdCount = @($Results | Where-Object { $_.Status -in @('Created', 'CreatedOwnerPending') }).Count
+    $ownerPending = @($Results | Where-Object { $_.Status -eq 'CreatedOwnerPending' })
     $whatIfCount = @($Results | Where-Object { $_.Status -eq 'WhatIf' }).Count
     $groupOnly = @($Results | Where-Object { $_.Status -eq 'GroupOnly' })
     $failed = @($Results | Where-Object { $_.Status -eq 'Failed' }).Count
@@ -1194,6 +1244,14 @@ function Write-ResultSummary {
     }
 
     Write-Host ("Summary: {0} created, {1} group-only, {2} failed, {3} requested." -f $createdCount, $groupOnly.Count, $failed, $Results.Count) -ForegroundColor Cyan
+
+    if ($ownerPending.Count -gt 0) {
+        Write-Host ''
+        Write-Warning 'The following Teams were created but the selected owner could not be assigned:'
+        foreach ($item in $ownerPending) {
+            Write-Host ("  - {0}  (team {1})" -f $item.DisplayName, $item.TeamId) -ForegroundColor Yellow
+        }
+    }
 
     if ($groupOnly.Count -gt 0) {
         Write-Host ''

@@ -48,7 +48,7 @@ Use this workflow to investigate suspected SDS class provisioning failures witho
 1. Preserve existing connection validation, interactive date validation, CSV schema, and read-only behavior unless the request explicitly changes one of those contracts.
 2. Keep Exchange filtering server-side and date-bounded in the preferred script. Do not replace it with a tenant-wide retrieval.
 3. Keep per-group Graph failures recoverable with `Write-Warning` so one inaccessible group does not discard the remaining report.
-4. Treat the SDS extension attribute as tenant-sensitive configuration; ask before changing its value.
+4. Treat the SDS education extension attribute as a service-defined SDS constant. Preserve its established value and ask before changing it. Do not recommend replacing standard SDS `resourceBehaviorOptions` or `creationOptions` with values from Teams-client-created classes unless the task explicitly changes the provisioning model.
 5. Parse-check every changed PowerShell script before an authenticated run:
 
    ```powershell
