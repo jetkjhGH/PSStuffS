@@ -54,7 +54,7 @@ $GID = $GraphClass.id
 
 $GID
 
-Sleep 10
+Start-Sleep -Seconds 10
 
 ##Create team from group
 $params = @{
