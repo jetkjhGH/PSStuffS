@@ -10,8 +10,9 @@ It supports two creation methods:
 - **Non-Activated:** Creates all Microsoft 365 Unified groups first, marks them as education
   sections, waits at least 30 seconds for replication, and then teamifies each group with
   retries. These classes follow the SDS-style pending activation behavior.
-- **Activated:** Creates each Team directly from the `educationClass` template and assigns
-  the selected user as an owner.
+- **Activated:** Creates each Team directly from the `educationClass` template and attempts
+  to assign the selected user as an owner with bounded retries. A Team that is created but
+  still needs owner assignment is reported as `CreatedOwnerPending`.
 
 The script also:
 

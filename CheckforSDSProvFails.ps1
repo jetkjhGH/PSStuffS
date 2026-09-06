@@ -1,4 +1,4 @@
-$folderPath = "$env:temp\TeamSiteTrigger"
+$folderPath = Join-Path (Join-Path $env:TEMP 'EDU Scripts') 'TeamSiteTrigger'
 $RunTimestamp = Get-Date -Format 'MM-dd-yy_HH-mm-ss'
 $NoSPOUNGResults = Join-Path $folderPath "NoSPOUNGResults$RunTimestamp.csv"
 $SDSGroupNotTeamifiedResults = Join-Path $folderPath "SDSGroupNotTeamified$RunTimestamp.csv"

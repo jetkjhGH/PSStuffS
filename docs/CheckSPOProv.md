@@ -61,11 +61,12 @@ Set-Location C:\PSSTuffS
 
 ## Output
 
-The script writes dated CSV files directly to the current user's temporary directory:
+The script writes dated CSV files to its report folder under the shared EDU Scripts temporary
+parent:
 
 ```text
-%TEMP%\NoSPOUNGResultsMM-dd-yy.csv
-%TEMP%\SDSGroupNotTeamifiedMM-dd-yy.csv
+%TEMP%\EDU Scripts\CheckSPOProv\NoSPOUNGResultsMM-dd-yy.csv
+%TEMP%\EDU Scripts\CheckSPOProv\SDSGroupNotTeamifiedMM-dd-yy.csv
 ```
 
 It opens the SharePoint-site report automatically. It opens the non-teamified SDS report

@@ -11,6 +11,8 @@ PowerShell utilities for Microsoft 365 education environments, including School 
 | `Create Graph API Teams (Class Teams - SDS Options).ps1` | Legacy examples for creating one non-activated class Team and one activated class Team. | [Read the guide](docs/Create-Graph-API-Teams-Class-Teams-SDS-Options.md) |
 | `CheckforSDSProvFails.ps1` | Reports SDS class Teams without SharePoint sites and SDS groups that were not teamified. | [Read the guide](docs/CheckforSDSProvFails.md) |
 | `CheckSPOProv.ps1` | Earlier reporting script for SharePoint provisioning and non-teamified SDS groups. | [Read the guide](docs/CheckSPOProv.md) |
+| `GetGroupsBrokenSPO.ps1` | Diagnoses group/site divergence and can explicitly request site provisioning for revalidated missing-site candidates. | [Read the guide](docs/GetGroupsBrokenSPO.md) |
+| `IdentifyClassesNoChannelActiivity.ps1` | Reports General-channel user and system/service activity for selected class Teams. | [Read the guide](docs/IdentifyClassesNoChannelActiivity.md) |
 
 ## General requirements
 
@@ -29,6 +31,9 @@ Install-Module ExchangeOnlineManagement -Scope CurrentUser
 
 The scripts do not store credentials. Authenticate through the Microsoft sign-in windows
 opened by `Connect-MgGraph` and `Connect-ExchangeOnline`.
+
+Repository-owned report scripts write their default outputs beneath `%TEMP%\EDU Scripts\`.
+Each script keeps a separate report subfolder there; see its guide for the exact path.
 
 If local execution policy blocks a script, allow it only for the current PowerShell process:
 

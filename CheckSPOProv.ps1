@@ -1,8 +1,13 @@
-$NoSPOUNGResults = "$env:temp\NoSPOUNGResults$(get-date -f MM-dd-yy).csv"
-$SDSGroupNotTeamifiedResults = "$env:temp\SDSGroupNotTeamified$(get-date -f MM-dd-yy).csv"
+$folderPath = Join-Path (Join-Path $env:TEMP 'EDU Scripts') 'CheckSPOProv'
+$NoSPOUNGResults = Join-Path $folderPath "NoSPOUNGResults$(get-date -f MM-dd-yy).csv"
+$SDSGroupNotTeamifiedResults = Join-Path $folderPath "SDSGroupNotTeamified$(get-date -f MM-dd-yy).csv"
 $SDSObjectTypeKey = 'extension_fe2174665583431c953114ff7268b7b3_Education_ObjectType'
 $StartDate = [datetime]'2026-01-01'
 $EndDate = [datetime]'2027-01-01'
+
+if (-not (Test-Path -Path $folderPath)) {
+	New-Item -ItemType Directory -Path $folderPath | Out-Null
+}
 
 Write-Host 'Retrieving all Microsoft 365 groups. This can take several minutes and Exchange does not report progress...' -ForegroundColor Yellow
 $RetrievalTimer = [System.Diagnostics.Stopwatch]::StartNew()

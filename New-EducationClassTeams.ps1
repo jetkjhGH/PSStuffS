@@ -23,8 +23,10 @@
                     newly created group, so teamifying immediately after creation fails
                     intermittently.
 
-    Activated     - Creates the team directly from the educationClass template. The
-                    class is immediately active for the owner and members.
+    Activated     - Creates the team directly from the educationClass template, then
+                    attempts to assign the selected user as an owner with bounded
+                    retries. A Team that is created but still needs owner assignment
+                    is reported as CreatedOwnerPending.
 
     The script assumes an existing Microsoft Graph session; it validates the connection
     and required scopes but does not call Connect-MgGraph.

@@ -72,7 +72,7 @@ The Exchange query is restricted to the selected date range. The end date is inc
 Reports are written to:
 
 ```text
-%TEMP%\TeamSiteTrigger\
+%TEMP%\EDU Scripts\TeamSiteTrigger\
 ```
 
 Possible files:
