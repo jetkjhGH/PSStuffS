@@ -13,6 +13,7 @@ PowerShell utilities for Microsoft 365 education environments, including School 
 | `CheckSPOProv.ps1` | Earlier reporting script for SharePoint provisioning and non-teamified SDS groups. | [Read the guide](docs/CheckSPOProv.md) |
 | `GetGroupsBrokenSPO.ps1` | Diagnoses group/site divergence and can explicitly request site provisioning for revalidated missing-site candidates. | [Read the guide](docs/GetGroupsBrokenSPO.md) |
 | `IdentifyClassesNoChannelActiivity.ps1` | Reports General-channel user and system/service activity for selected class Teams. | [Read the guide](docs/IdentifyClassesNoChannelActiivity.md) |
+| `ChatManagementInterface.ps1` | Launches the PowerShell 7 Teams chat admin module for Graph-backed chat inspection, reporting, deletion previews, and guarded deletion. | [Read the guide](docs/TeamsChatAdmin.md) |
 | `Remove-Targeted_Section_Memberships.ps1` | Removes non-owner members from CSV-targeted groups and records successful removals. | [Read the guide](docs/Remove-Targeted-Section-Memberships.md) |
 
 ## General requirements
@@ -22,6 +23,7 @@ PowerShell utilities for Microsoft 365 education environments, including School 
 - A Microsoft 365 account with access appropriate to the selected script
 - The Microsoft Graph PowerShell SDK for Graph-based scripts
 - The Exchange Online PowerShell module for scripts that use `Get-UnifiedGroup`
+- PowerShell 7 is required for the Teams chat admin module
 
 Install the modules for the current user:
 
@@ -43,3 +45,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 See the individual guides for required connections and scopes.
+
+Create a portable Teams Chat Admin customer package with:
+
+```powershell
+.\tools\Publish-TeamsChatAdminPackage.ps1
+```
