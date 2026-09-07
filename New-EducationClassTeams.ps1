@@ -58,7 +58,8 @@ $ErrorActionPreference = 'Stop'
 
 #region Configuration
 
-# Scopes the script needs. Validated against the active session, never requested.
+# Administrator adjustment: update this list only if the script begins using additional
+# Graph operations. The script validates these delegated scopes but never requests consent.
 $script:RequiredScopes = @(
     'Group.ReadWrite.All'
     'Team.Create'
@@ -66,13 +67,15 @@ $script:RequiredScopes = @(
     'User.Read.All'
 )
 
+# Graph API version adjustment: keep v1.0 for production use. Switching to beta can change
+# payload contracts and should be tested separately.
 $script:GraphBaseUri = 'https://graph.microsoft.com/v1.0'
 
-# Education extension attribute that marks a group as an unactivated class section.
+# SDS service-defined constant: do not replace this with a tenant-specific extension.
 $script:EducationObjectTypeAttribute = 'extension_fe2174665583431c953114ff7268b7b3_Education_ObjectType'
 
-# SharePoint app role grants and provisioning switches applied to SDS-style class groups.
-# Kept here so they can be reviewed and adjusted without touching the creation logic.
+# SDS service-defined provisioning values. Keep these unchanged for SDS-style class groups;
+# they are centralized here for review, not as routine administrator customization points.
 $script:ClassResourceBehaviorOptions = @(
     'appRoleForSite:22d27567-b3f0-4dc2-9ec2-46ed368ba538:fullcontrol'
     'appRoleForSite:c9a559d2-7aab-4f13-a6ed-e7e9c52aec87:fullcontrol'
@@ -87,14 +90,17 @@ $script:ClassResourceBehaviorOptions = @(
     'SubscribeNewGroupMembers'
 )
 
+# SDS service-defined creation option for the group-first provisioning model.
 $script:ClassCreationOptions = @('ExchangeProvisioningFlags:4556')
 
-# Minimum time to let a batch of new groups replicate before teamifying any of them.
+# Administrator adjustment: increase this minimum when large batches regularly need early
+# teamification retries. Reducing it below 30 seconds can increase transient 404 responses.
 # The Teams templates backend 404s until it can see the group, so this is a floor, not a
 # guarantee; Convert-GroupToClassTeam still retries on top of it.
 $script:GroupSettleSeconds = 30
 
-# Naming templates offered to the user. Add entries here to expose new conventions.
+# Administrator adjustment: add or edit entries here to offer organization-specific naming
+# conventions. Patterns may use only tokens declared in $script:NamingTokens plus {Index}.
 # {Index} is appended automatically when a pattern omits it and more than one team is
 # requested, so every generated name stays unique.
 $script:NamingTemplates = @(
@@ -116,8 +122,8 @@ $script:NamingTemplates = @(
     }
 )
 
-# Tokens a pattern may contain. Each is prompted for once and reused across the batch,
-# except {Index}, which is substituted per team.
+# Developer adjustment: adding a token here exposes its prompt, but the value must still be
+# meaningful to the naming patterns that use it. {Index} is handled separately per Team.
 $script:NamingTokens = @{
     '{Subject}'    = 'Subject or course name'
     '{Period}'     = 'Class period'

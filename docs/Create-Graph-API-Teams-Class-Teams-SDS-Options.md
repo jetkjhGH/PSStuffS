@@ -69,6 +69,33 @@ Get-MgUser -UserId teacher@contoso.com |
 
 The mail alias must be unique and should contain only characters accepted by Exchange.
 
+The script now marks both editable areas with `Administrator adjustments` regions. The
+non-activated section also exposes:
+
+```powershell
+$GroupReplicationDelaySeconds = 10
+```
+
+Increase this delay if the Teams template service returns a transient `404 NotFound` while
+the new group is replicating. This remains a legacy example with no retry loop; use
+[`New-EducationClassTeams.ps1`](New-EducationClassTeams.md) for resilient batch processing.
+
+Do not modify the education extension name, `Section` value, `creationOptions`, or
+`resourceBehaviorOptions` for routine tenant reuse. Those are service-defined values for
+the SDS-style provisioning model. The application IDs inside `resourceBehaviorOptions` are
+not customer tenant IDs.
+
+## Script flow
+
+The inline administrator comments describe these stages:
+
+1. Build the non-activated Unified group payload.
+2. Create the group and capture its ID.
+3. Wait for cross-service replication.
+4. Teamify the group with the `educationClass` template.
+5. Verify the Team by ID.
+6. Run the separate direct, activated-Team example.
+
 ## Run the script
 
 ```powershell

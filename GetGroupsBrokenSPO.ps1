@@ -1,8 +1,37 @@
+<#
+.SYNOPSIS
+ Investigates SDS class group and SharePoint site divergence and can request site provisioning.
+
+.DESCRIPTION
+ Prompts for an inclusive date range, retrieves that range from Exchange Online, compares
+ group and site data with Microsoft Graph, reports missing-site and non-teamified SDS
+ conditions, and revalidates every missing-site candidate before offering remediation.
+
+ Get-MgGroupSite -SiteId root can trigger SharePoint site provisioning. That path is guarded
+ by revalidation, an operator prompt, SupportsShouldProcess, and bounded retries. Use -WhatIf
+ before a live remediation run.
+
+ The script assumes Graph and Exchange Online are already connected. It does not sign in.
+
+.PARAMETER UnattendedProvisioning
+ Skips only the batch Y/N approval after candidate revalidation. It does not skip date
+ prompts, connection checks, revalidation, or an explicitly supplied -Confirm.
+
+.NOTES
+ Connect before running:
+  Connect-ExchangeOnline
+  Connect-MgGraph -Scopes 'Group.Read.All', 'Sites.Read.All'
+
+ App-only Graph authentication is preferred for tenant-wide site inspection.
+#>
+
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
  [switch]$UnattendedProvisioning
 )
 
+# Administrator adjustment: change only the parent output folder when reports require a
+# controlled retention location. Timestamped names prevent one run overwriting another.
 $folderPath = Join-Path (Join-Path $env:TEMP 'EDU Scripts') 'TeamSiteTrigger'
 $RunTimestamp = Get-Date -Format 'MM-dd-yy_HH-mm-ss'
 $NoSPOUNGResults = Join-Path $folderPath "NoSPOUNGResults$RunTimestamp.csv"
@@ -10,12 +39,14 @@ $SDSGroupNotTeamifiedResults = Join-Path $folderPath "SDSGroupNotTeamified$RunTi
 $GroupSiteDivergenceResults = Join-Path $folderPath "GroupSiteDivergence$RunTimestamp.csv"
 $SPOSiteCreationResults = Join-Path $folderPath "SPOSiteCreationResults$RunTimestamp.csv"
 $SPOCandidateRefreshFailureResults = Join-Path $folderPath "SPOCandidateRefreshFailures$RunTimestamp.csv"
+# SDS service-defined constant. Do not substitute a tenant-specific extension.
 $SDSObjectTypeKey = 'extension_fe2174665583431c953114ff7268b7b3_Education_ObjectType'
 
 if (-not (Test-Path -Path $folderPath)) {
  New-Item -ItemType Directory -Path $folderPath | Out-Null
 }
 
+# Validates yyyy-MM-dd input and converts the inclusive end date to an exclusive boundary.
 function Read-SearchDateRange {
  [CmdletBinding()]
  param()
@@ -61,6 +92,7 @@ function Read-SearchDateRange {
  }
 }
 
+# Obtains explicit batch-level approval before any live SharePoint provisioning request.
 function Read-SPOProvisioningConfirmation {
  [CmdletBinding()]
  [OutputType([bool])]
@@ -80,6 +112,7 @@ function Read-SPOProvisioningConfirmation {
  } while ($true)
 }
 
+# Normalizes Exchange and Graph timestamps to UTC before they are compared.
 function ConvertTo-UtcDateTime {
  [CmdletBinding()]
  param(
@@ -101,6 +134,7 @@ function ConvertTo-UtcDateTime {
  return $DateTime.ToUniversalTime()
 }
 
+# Returns True, False, or Unknown for source timestamp divergence in the CSV report.
 function Compare-CreationDateTime {
  [CmdletBinding()]
  [OutputType([string])]
@@ -121,6 +155,7 @@ function Compare-CreationDateTime {
  return 'True'
 }
 
+# Formats timestamp differences in the most readable unit while retaining the sign when requested.
 function Format-DateDifference {
  [CmdletBinding()]
  [OutputType([string])]
@@ -168,6 +203,7 @@ function Format-DateDifference {
  return "$Sign$FormattedValue $Unit$UnitSuffix"
 }
 
+# Collects Exchange group, Graph group, group-root site, and direct site evidence for one group.
 function Get-GroupSiteDivergence {
  [CmdletBinding()]
  param(
@@ -263,6 +299,7 @@ function Get-GroupSiteDivergence {
  }
 }
 
+# Runs the per-group comparison and exports the complete divergence evidence table.
 function Invoke-GroupSiteDivergenceReport {
  [CmdletBinding()]
  param(
@@ -291,6 +328,7 @@ function Invoke-GroupSiteDivergenceReport {
  Invoke-Item -Path $OutputPath
 }
 
+# Finds missing-site candidates and refreshes each through Exchange before remediation eligibility.
 function Find-SDSClassTeamWithoutSiteUrl {
  [CmdletBinding()]
  param(
@@ -351,6 +389,7 @@ function Find-SDSClassTeamWithoutSiteUrl {
  }
 }
 
+# Exports candidates that could not be revalidated; these are never sent to the trigger function.
 function Invoke-SPOCandidateRefreshFailureReport {
  [CmdletBinding()]
  param(
@@ -371,6 +410,7 @@ function Invoke-SPOCandidateRefreshFailureReport {
  Invoke-Item -Path $OutputPath
 }
 
+# Limits retries to known transient HTTP and service-delay signatures.
 function Test-TransientSPOTriggerError {
  [CmdletBinding()]
  [OutputType([bool])]
@@ -382,6 +422,7 @@ function Test-TransientSPOTriggerError {
  return $Message -match '(?i)(\[?(404|408|429|500|502|503|504)\]?|not found|timed? out|timeout|throttl|service unavailable|temporarily unavailable)'
 }
 
+# Requests group-root site provisioning with ShouldProcess and bounded transient retries.
 function Invoke-SPOSiteTrigger {
  [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
  param(
@@ -496,6 +537,7 @@ function Invoke-SPOSiteTrigger {
  return $Results
 }
 
+# Executes the trigger batch, summarizes outcomes, and exports the remediation audit trail.
 function Invoke-SPOSiteTriggerReport {
  [CmdletBinding()]
  param(
@@ -534,6 +576,7 @@ function Invoke-SPOSiteTriggerReport {
  Invoke-Item -Path $OutputPath
 }
 
+# Exports the initial point-in-time missing-site candidates without claiming they remain missing.
 function Invoke-SDSClassTeamWithoutSiteUrlReport {
  [CmdletBinding()]
  param(
@@ -555,6 +598,7 @@ function Invoke-SDSClassTeamWithoutSiteUrlReport {
  }
 }
 
+# Uses the SDS Section extension to distinguish class groups from ordinary non-Team groups.
 function Invoke-SDSGroupNotTeamifiedReport {
  [CmdletBinding()]
  param(
@@ -610,6 +654,7 @@ function Invoke-SDSGroupNotTeamifiedReport {
  }
 }
 
+# Normalizes supported Graph context shapes to Delegated or AppOnly for permission handling.
 function Resolve-GraphAuthenticationType {
  [CmdletBinding()]
  [OutputType([string])]
@@ -630,6 +675,7 @@ function Resolve-GraphAuthenticationType {
  throw "Unsupported Microsoft Graph authentication type: $($Context.AuthType)"
 }
 
+# Validates Graph commands, connection type, and delegated read capabilities without signing in.
 function Test-GraphConnection {
  [CmdletBinding()]
  param()
@@ -673,6 +719,7 @@ function Test-GraphConnection {
  return $Context
 }
 
+# Validates Exchange commands and the active organization before the date-scoped query.
 function Test-ExchangeConnection {
  [CmdletBinding()]
  param()
@@ -701,6 +748,8 @@ $EndDate = $DateRange.EndDateExclusive
 Test-GraphConnection
 Test-ExchangeConnection
 
+# Keep this server-side date filter. Replacing it with an unrestricted group retrieval can
+# substantially increase runtime and the number of subsequent Graph requests.
 $StartDateFilterValue = $StartDate.ToString('MM/dd/yyyy HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
 $EndDateFilterValue = $EndDate.ToString('MM/dd/yyyy HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
 $UnifiedGroupFilter = "WhenCreatedUTC -ge '$StartDateFilterValue' -and WhenCreatedUTC -lt '$EndDateFilterValue'"
@@ -717,6 +766,7 @@ catch {
 $RetrievalTimer.Stop()
 Write-Host "Retrieved $($UNGroups.Count) groups in the selected date range in $($RetrievalTimer.Elapsed.ToString('hh\:mm\:ss'))." -ForegroundColor Green
 
+# Revalidation separates initial observations, confirmed candidates, and refresh failures.
 $MissingSiteCandidates = Find-SDSClassTeamWithoutSiteUrl -Group $UNGroups -StartDate $StartDate -EndDateExclusive $EndDate
 $NoSPOUNGs = @($MissingSiteCandidates.ConfirmedGroups)
 Invoke-SDSClassTeamWithoutSiteUrlReport -Group @($MissingSiteCandidates.CandidateGroups) -OutputPath $NoSPOUNGResults
@@ -724,6 +774,8 @@ Invoke-SPOCandidateRefreshFailureReport -RefreshFailure @($MissingSiteCandidates
 if ($NoSPOUNGs.Count -eq 0) {
  Write-Host 'No currently confirmed groups require a SharePoint site provisioning request.' -ForegroundColor Green
 }
+# Administrator adjustment: these final call arguments control only bounded trigger retries.
+# Do not broaden Test-TransientSPOTriggerError to hide authorization or permanent failures.
 elseif ($WhatIfPreference) {
  Invoke-SPOSiteTriggerReport -Group $NoSPOUNGs -OutputPath $SPOSiteCreationResults -MaximumAttempts 3 -RetryDelaySeconds 5
 }

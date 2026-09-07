@@ -1,14 +1,65 @@
+<#
+.SYNOPSIS
+	Reports date-scoped SDS class provisioning conditions.
+
+.DESCRIPTION
+	Prompts for an inclusive date range, validates existing Microsoft Graph and Exchange
+	Online sessions, and produces up to two CSV reports:
+
+	1. Team-enabled, hidden-membership groups in range that have no SharePoint site URL.
+	2. Groups in range that are not Team-enabled but carry the SDS education Section
+	   extension.
+
+	The Exchange query is filtered server-side to the selected dates. Microsoft Graph is
+	then queried only for non-Team candidates. The script is read-only against the tenant.
+
+.NOTES
+	Required modules:
+	- ExchangeOnlineManagement
+	- Microsoft.Graph.Authentication
+	- Microsoft.Graph.Groups
+
+	Connect before running:
+		Connect-ExchangeOnline
+		Connect-MgGraph -Scopes 'Group.Read.All'
+
+	The entered end date is inclusive. Non-empty CSV reports open automatically in the
+	default application.
+#>
+
+#region Administrator-adjustable settings
+
+# Change this folder when reports need a controlled retention location. The timestamp keeps
+# multiple runs from overwriting one another.
 $folderPath = Join-Path (Join-Path $env:TEMP 'EDU Scripts') 'TeamSiteTrigger'
 $RunTimestamp = Get-Date -Format 'MM-dd-yy_HH-mm-ss'
 $NoSPOUNGResults = Join-Path $folderPath "NoSPOUNGResults$RunTimestamp.csv"
 $SDSGroupNotTeamifiedResults = Join-Path $folderPath "SDSGroupNotTeamified$RunTimestamp.csv"
+
+#endregion Administrator-adjustable settings
+
+# This extension name and its Section value are defined by SDS. Do not replace them with
+# tenant-specific identifiers or values copied from Teams-client-created classes.
 $SDSObjectTypeKey = 'extension_fe2174665583431c953114ff7268b7b3_Education_ObjectType'
 
+# Create the shared output folder before any report attempts to export a CSV.
 if (-not (Test-Path -Path $folderPath)) {
  New-Item -ItemType Directory -Path $folderPath | Out-Null
 }
 
 function Read-SearchDateRange {
+ <#
+ .SYNOPSIS
+  Prompts for and validates the diagnostic date range.
+
+ .DESCRIPTION
+  Accepts dates only in yyyy-MM-dd format. Converts the administrator's inclusive end date
+  to an exclusive boundary by adding one day, which avoids time-of-day gaps in the Exchange
+  filter and local comparisons.
+
+ .OUTPUTS
+  PSCustomObject containing StartDate and EndDateExclusive.
+ #>
  [CmdletBinding()]
  param()
 
@@ -54,6 +105,17 @@ function Read-SearchDateRange {
 }
 
 function Invoke-SDSClassTeamWithoutSiteUrlReport {
+ <#
+ .SYNOPSIS
+  Exports Team-enabled SDS class candidates that have no SharePoint site URL.
+
+ .DESCRIPTION
+  Filters the date-scoped Exchange group collection for hidden-membership, Team-enabled
+  groups with an empty SharePointSiteUrl. Exports and opens the CSV only when matches exist.
+
+  The selected columns form the report contract. Add columns only when downstream consumers
+  are also updated.
+ #>
  [CmdletBinding()]
  param(
   [Parameter(Mandatory)]
@@ -87,6 +149,18 @@ function Invoke-SDSClassTeamWithoutSiteUrlReport {
 }
 
 function Invoke-SDSGroupNotTeamifiedReport {
+ <#
+ .SYNOPSIS
+  Exports SDS Section groups that are not Team-enabled.
+
+ .DESCRIPTION
+  Reduces the Exchange result set to groups without the Team provisioning option, then
+  retrieves each candidate from Graph to inspect the SDS education extension. Per-group
+  Graph failures produce warnings and do not stop the remaining report.
+
+  The SDS extension key is supplied as a parameter for testability, but routine operators
+  should use the service-defined value configured by the script.
+ #>
  [CmdletBinding()]
  param(
   [Parameter(Mandatory)]
@@ -107,6 +181,8 @@ function Invoke-SDSGroupNotTeamifiedReport {
  Write-Host "Checking $($NonTeamGroups.Count) non-Team groups for the SDS Section extension..." -ForegroundColor Yellow
  foreach ($Candidate in $NonTeamGroups) {
   try {
+   # A group can disappear or become inaccessible between the Exchange and Graph queries.
+   # Keep that failure local so the remaining candidates are still evaluated.
    $GraphGroup = Get-MgGroup -GroupId $Candidate.ExternalDirectoryObjectId -ErrorAction Stop
    $EducationObjectType = if ($null -ne $GraphGroup.AdditionalProperties) {
     [string]$GraphGroup.AdditionalProperties[$SDSObjectTypeKey]
@@ -115,6 +191,7 @@ function Invoke-SDSGroupNotTeamifiedReport {
     $null
    }
 
+   # Section is the SDS service-defined marker for an education class group.
    if ($EducationObjectType -eq 'Section') {
     $SDSGroupNotTeamified.Add([pscustomobject]@{
      ExternalDirectoryObjectId = $Candidate.ExternalDirectoryObjectId
@@ -142,6 +219,14 @@ function Invoke-SDSGroupNotTeamifiedReport {
 }
 
 function Test-GraphConnection {
+ <#
+ .SYNOPSIS
+  Validates the Microsoft Graph command availability, session, and group-read scope.
+
+ .DESCRIPTION
+  Accepts the least-privileged Group.Read.All scope or the broader Group.ReadWrite.All
+  scope. This function never initiates sign-in or requests additional consent.
+ #>
  [CmdletBinding()]
  param()
 
@@ -173,6 +258,14 @@ function Test-GraphConnection {
 }
 
 function Test-ExchangeConnection {
+ <#
+ .SYNOPSIS
+  Validates the Exchange Online commands and active organization session.
+
+ .DESCRIPTION
+  Calls Get-OrganizationConfig as a lightweight connection check. It does not initiate
+  sign-in and stops the workflow before the date-scoped group query if no session exists.
+ #>
  [CmdletBinding()]
  param()
 
@@ -197,9 +290,13 @@ $DateRange = Read-SearchDateRange
 $StartDate = $DateRange.StartDate
 $EndDate = $DateRange.EndDateExclusive
 
+# Validate both sessions before issuing report queries. The script deliberately does not
+# call Connect-* so the administrator controls the target tenant and account.
 Test-GraphConnection
 Test-ExchangeConnection
 
+# Get-UnifiedGroup expects an Exchange filter string. Using an exclusive end boundary keeps
+# all times on the administrator's selected end date while preserving server-side filtering.
 $StartDateFilterValue = $StartDate.ToString('MM/dd/yyyy HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
 $EndDateFilterValue = $EndDate.ToString('MM/dd/yyyy HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
 $UnifiedGroupFilter = "WhenCreatedUTC -ge '$StartDateFilterValue' -and WhenCreatedUTC -lt '$EndDateFilterValue'"
@@ -210,6 +307,6 @@ $UNGroups = @(Get-UnifiedGroup -Filter $UnifiedGroupFilter -ResultSize unlimited
 $RetrievalTimer.Stop()
 Write-Host "Retrieved $($UNGroups.Count) groups in the selected date range in $($RetrievalTimer.Elapsed.ToString('hh\:mm\:ss'))." -ForegroundColor Green
 
+# Run the two independent classifications over the same date-scoped Exchange snapshot.
 Invoke-SDSClassTeamWithoutSiteUrlReport -Group $UNGroups -StartDate $StartDate -EndDateExclusive $EndDate -OutputPath $NoSPOUNGResults
 Invoke-SDSGroupNotTeamifiedReport -Group $UNGroups -SDSObjectTypeKey $SDSObjectTypeKey -OutputPath $SDSGroupNotTeamifiedResults
-

@@ -101,6 +101,21 @@ The SDS extension key and `Section` value used for date discovery are service-de
 them casually. Altering the hidden-membership or Team-enabled candidate criteria changes discovery
 results and should first be tested in a non-production tenant.
 
+## Inline function map
+
+Concise comments before each function explain the administrative role of:
+
+- Team ID validation, normalization, CSV import, and pasted input.
+- Date-scoped SDS discovery and its conditional Exchange connection requirement.
+- Delegated versus app-only Graph validation and delegated membership prechecks.
+- Graph error normalization, including the failing stage, HTTP status, and request ID.
+- General-channel activity classification and per-Team recoverable errors.
+- Timestamped CSV export and the `-SkipOpenResults` behavior.
+
+When adapting the report, preserve the distinction between user messages, service posts, and
+hidden lifecycle events. Adding replies or additional channels increases Graph request volume and
+changes the meaning of the existing report columns.
+
 ## Troubleshooting
 
 - **`DelegatedUserNotMember`:** The delegated account is not a direct member of the Team. Use an
@@ -125,50 +140,3 @@ results and should first be tested in a non-production tenant.
    `LatestActivityType` and counts.
 4. Run a narrow SDS date search before using a broad range, then archive the timestamped CSV with
    the search date range used.
-# IdentifyClassesNoChannelActiivity.ps1
-
-## Purpose
-
-`IdentifyClassesNoChannelActiivity.ps1` reports General-channel activity for class Teams supplied
-from a CSV, an input dialog, or an SDS date-range search. The script uses existing Microsoft Graph
-and, when date discovery is selected, Exchange Online sessions. It does not modify tenant data.
-
-## Activity Classification
-
-The report treats General-channel messages as activity, but excludes Microsoft Graph lifecycle
-events that are not visible posts in Teams. The Graph PowerShell SDK can report them as
-`systemEvent` or as `unknownFutureValue` with a `<systemEventMessage/>` body. An
-`unknownFutureValue` message with `EventDetail` is not excluded solely for that reason: assignment
-posts use that shape too. It records user and service activity separately:
-
-- `LatestUserActivity` and `UserActivityMessageCount` identify messages with a user sender.
-- `LatestSystemActivity` and `SystemActivityMessageCount` identify messages without a user sender,
-  including posts made by the Assignments service.
-- `LatestChannelActivity` is the most recent message of either type.
-- `LatestActivityType` is `User` or `SystemOrService`, identifying the source of that most recent
-  activity.
-- `IgnoredSystemEventCount` identifies Graph lifecycle events excluded from activity.
-- `Status` is `Active` when a user or service message was returned and `NoChannelActivity` when
-  only event records, or no records, were returned.
-
-The script currently evaluates General-channel root posts. Replies are not included in these
-activity fields.
-
-## Run
-
-Connect to Microsoft Graph before running the script. When SDS discovery by date is selected,
-connect to Exchange Online as well. The script verifies existing sessions and does not sign in
-automatically.
-
-```powershell
-.\IdentifyClassesNoChannelActiivity.ps1
-```
-
-Use `-SkipOpenResults` to prevent the exported CSV from opening automatically:
-
-```powershell
-.\IdentifyClassesNoChannelActiivity.ps1 -SkipOpenResults
-```
-
-Reports are exported to `%TEMP%\ClassChannelActivity\` by default. Use `-OutputDirectory` to
-select another output directory.

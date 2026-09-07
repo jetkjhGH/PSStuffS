@@ -124,6 +124,23 @@ Do not replace them with values from Teams-client-created classes. Changing the 
 Team-enabled, or date criteria changes which groups can be reported or remediated and should be
 validated in a test tenant first.
 
+## Inline function map
+
+The script now places a concise administrator comment before each function. The main groups are:
+
+- **Input and time helpers:** validate the date range and normalize/compare source timestamps.
+- **Divergence reporting:** gather Exchange group, Graph group, group-root site, and direct-site
+  evidence without treating a failed source lookup as evidence that a site is absent.
+- **Candidate revalidation:** separate initial missing-site observations from currently confirmed
+  candidates and refresh failures.
+- **Provisioning controls:** classify retryable errors, apply `ShouldProcess`, and export every
+  trigger outcome.
+- **Connection validation:** check existing Graph and Exchange sessions without initiating sign-in.
+
+The comments above the final workflow identify the supported retry arguments and the server-side
+Exchange date filter. Keep the filter date-bounded and keep remediation retries restricted to
+transient failures.
+
 ## Troubleshooting
 
 - **No CSV for a report:** Some reports are not created when they have no rows. Read the console
@@ -142,114 +159,3 @@ validated in a test tenant first.
 3. Review all candidate, refresh-failure, and trigger-result rows.
 4. Run without `-WhatIf`, answer `Y`, and use `-Confirm` for the first live test.
 5. Re-run the diagnostic later to confirm that Graph and Exchange both show a site URL and ID.
-# GetGroupsBrokenSPO.ps1
-
-## Purpose
-
-`GetGroupsBrokenSPO.ps1` is a date-scoped diagnostic for Microsoft 365 groups. It writes:
-
-1. An initial point-in-time report of SDS class Teams whose Exchange group data has no
-   `SharePointSiteUrl`.
-2. A report of candidates that could not be revalidated through Exchange before any
-   remediation.
-3. A group and SharePoint site divergence report using Microsoft Graph.
-4. A report of SDS `Section` groups that are not Team-enabled.
-
-When current Exchange revalidation finds groups still missing a site URL, the script prompts
-before requesting SharePoint provisioning. It does not send a request unless the operator
-answers `Y`.
-
-## Requirements
-
-- ExchangeOnlineManagement module and an existing Exchange Online connection.
-- Microsoft Graph PowerShell SDK and an existing Graph connection.
-- Read access to Microsoft 365 groups in Exchange Online.
-- For delegated Graph authentication, one of `Group.Read.All`, `Group.ReadWrite.All`,
-  `Directory.Read.All`, or `Directory.ReadWrite.All`, plus `Sites.Read.All` or
-  `Sites.ReadWrite.All`.
-- For app-only Graph authentication, equivalent application permissions approved in Entra.
-
-Connect before running the script:
-
-```powershell
-Connect-ExchangeOnline
-Connect-MgGraph -Scopes 'Group.Read.All', 'Sites.Read.All'
-```
-
-The script validates existing sessions and does not sign in automatically.
-
-## Run
-
-Run diagnostics for an inclusive date range:
-
-```powershell
-.\GetGroupsBrokenSPO.ps1
-```
-
-Enter dates as `yyyy-MM-dd` when prompted. The script restricts its Exchange query to that
-range.
-
-Preview the actions that would be requested for currently revalidated missing-site candidates:
-
-```powershell
-.\GetGroupsBrokenSPO.ps1 -WhatIf
-```
-
-To request provisioning, run the standard command after reviewing the diagnostic output and
-confirming the tenant and range:
-
-```powershell
-.\GetGroupsBrokenSPO.ps1
-```
-
-When the script identifies currently confirmed candidates, enter `Y` at the provisioning prompt.
-Enter `N` to skip provisioning. Add `-Confirm` to receive an additional prompt for every group.
-`-WhatIf` does not send Graph requests or prompt, but writes planned-action rows to the trigger
-report.
-
-For an attended session where the batch approval prompt is not appropriate, explicitly bypass it:
-
-```powershell
-.\GetGroupsBrokenSPO.ps1 -UnattendedProvisioning
-```
-
-`-UnattendedProvisioning` bypasses only the site-provisioning approval prompt after a successful
-recheck. It does not bypass the date-range prompts or `-Confirm` prompts. Use `-WhatIf` first to
-review the actions that this mode would request.
-
-## Revalidation And Results
-
-An empty `SharePointSiteUrl` in the initial CSV is an observation at the time the date-scoped
-query ran. SharePoint can provision a site asynchronously after that observation.
-
-Before a provisioning request, the script obtains each candidate again through
-`Get-UnifiedGroup`. Only a successful recheck that still has an empty `SharePointSiteUrl` is
-eligible for triggering. Recheck failures are exported separately and are never triggered.
-
-The trigger report uses these statuses:
-
-- `Triggered`: Graph returned a non-empty site ID.
-- `WhatIf`: the request was planned but not sent.
-- `Skipped`: the operator declined the confirmation prompt.
-- `AccessDenied`: Graph did not authorize the request.
-- `Unverified`: Graph returned without a site ID.
-- `Failed`: the request did not complete successfully.
-
-## Output
-
-Reports are written under `%TEMP%\TeamSiteTrigger\` using a run timestamp:
-
-- `NoSPOUNGResults...csv`: initial missing-site candidates.
-- `SPOCandidateRefreshFailures...csv`: candidates that Exchange could not revalidate.
-- `SPOSiteCreationResults...csv`: planned or requested provisioning actions, produced only when
-   confirmed candidates exist and the operator approves provisioning, or when `-WhatIf` is used.
-- `GroupSiteDivergence...csv`: Exchange and Graph group/site comparisons. The site creation
-   columns identify their Graph route: `GroupRootSiteCreatedDateTime` comes from
-   `Get-MgGroupSite -SiteId root`, while `SiteByIdCreatedDateTime` comes from `Get-MgSite` using
-   the returned site ID. `GroupCreationDivergence` and `SiteCreationDivergence` are absolute
-   timestamp differences formatted in seconds, minutes, hours, or days. `GroupToSiteProvisioningTime`
-   is the signed elapsed time from `GraphGroupCreatedDateTime` to
-   `GroupRootSiteCreatedDateTime`, using the same adaptive unit.
-- `SDSGroupNotTeamified...csv`: SDS `Section` groups without Team provisioning.
-
-The existing diagnostic CSV column layouts are preserved. The refresh-failure CSV is additive.

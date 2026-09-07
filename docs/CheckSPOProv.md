@@ -52,6 +52,24 @@ $EndDate = [datetime]'2027-01-01'
 
 The start is inclusive and the end is exclusive. The example above covers all of 2026.
 
+## Administrator adjustments
+
+Routine adjustments are grouped near the top of the script:
+
+| Setting | Safe use |
+| --- | --- |
+| `$folderPath` | Change where CSV reports are stored. Ensure the account can create the folder and write files. |
+| `$StartDate` | Inclusive beginning of the local report filter. |
+| `$EndDate` | Exclusive end of the local report filter. |
+
+Do not change `$SDSObjectTypeKey` or the `Section` comparison. They are SDS
+service-defined values, not tenant-specific configuration.
+
+The missing-site filter can be extended for a specialized investigation, but keep all four
+existing checks (`SharePointSiteUrl`, date range, hidden membership, and Team provisioning)
+unless intentionally changing what qualifies as a finding. Changing selected CSV columns
+also changes the report contract for any downstream automation.
+
 ## Run the script
 
 ```powershell
@@ -86,6 +104,9 @@ long time and may be throttled.
 
 Prefer [`CheckforSDSProvFails.ps1`](CheckforSDSProvFails.md), which filters the Exchange query
 to a user-selected date range.
+
+Comments in the script identify the tenant-wide Exchange query and the per-group Graph loop.
+Do not add more remote calls inside that loop without considering Graph throttling.
 
 ## Sign out
 

@@ -20,9 +20,11 @@
 
 [CmdletBinding()]
 param(
+ # Administrator adjustment: use a controlled folder when reports require retention.
  [Parameter()]
  [string]$OutputDirectory = (Join-Path (Join-Path $env:TEMP 'EDU Scripts') 'ClassChannelActivity'),
 
+ # Useful for scheduled or repeated attended runs where opening each CSV is undesirable.
  [Parameter()]
  [switch]$SkipOpenResults
 )
@@ -30,14 +32,18 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Update this list only when Graph operations change. It is displayed to the operator and
+# validated for delegated sessions; the script never initiates consent.
 $script:RequiredGraphScopes = @(
  'Channel.ReadBasic.All'
  'ChannelMessage.Read.All'
  'Group.Read.All'
  'Team.ReadBasic.All'
 )
+# SDS service-defined constant used only by date-based class discovery.
 $script:EducationObjectTypeAttribute = 'extension_fe2174665583431c953114ff7268b7b3_Education_ObjectType'
 
+# Prints connection guidance before validation so operators can correct the session.
 function Show-ConnectionRequirements {
  [CmdletBinding()]
  param()
@@ -48,6 +54,7 @@ function Show-ConnectionRequirements {
  Write-Host '  Exchange Online is checked only if you select SDS discovery by date.'
 }
 
+# Validates a single Team ID without querying Microsoft Graph.
 function Test-TeamId {
  [CmdletBinding()]
  [OutputType([bool])]
@@ -61,6 +68,7 @@ function Test-TeamId {
  return [guid]::TryParse($Value.Trim().Trim('"'), [ref]$parsedId)
 }
 
+# Normalizes GUIDs, removes duplicates, and rejects any nonblank invalid ID.
 function ConvertTo-UniqueTeamId {
  [CmdletBinding()]
  [OutputType([string[]])]
@@ -96,6 +104,7 @@ function ConvertTo-UniqueTeamId {
  return $teamIds
 }
 
+# Finds GUID-bearing CSV columns and lets the operator choose the intended Team ID column.
 function Import-TeamIdCsv {
  [CmdletBinding()]
  [OutputType([string[]])]
@@ -141,6 +150,7 @@ function Import-TeamIdCsv {
  return ConvertTo-UniqueTeamId -Value $values
 }
 
+# Collects a small ad hoc Team list through the Windows Visual Basic input dialog.
 function Read-TeamIdInputBox {
  [CmdletBinding()]
  [OutputType([string[]])]
@@ -159,6 +169,7 @@ function Read-TeamIdInputBox {
  return ConvertTo-UniqueTeamId -Value $values
 }
 
+# Validates an inclusive yyyy-MM-dd range and returns an exclusive end boundary.
 function Read-SearchDateRange {
  [CmdletBinding()]
  param()
@@ -203,6 +214,7 @@ function Read-SearchDateRange {
  }
 }
 
+# Normalizes supported Graph context shapes for delegated/app-only branching.
 function Resolve-GraphAuthenticationType {
  [CmdletBinding()]
  [OutputType([string])]
@@ -223,6 +235,7 @@ function Resolve-GraphAuthenticationType {
  throw "Unsupported Microsoft Graph authentication type: $($Context.AuthType)"
 }
 
+# Validates Graph commands, the existing session, and delegated capabilities without signing in.
 function Test-GraphConnection {
  [CmdletBinding()]
  param()
@@ -285,6 +298,7 @@ function Test-GraphConnection {
  return $context
 }
 
+# Builds a case-insensitive set used to avoid expected 403s in delegated mode.
 function Get-DelegatedJoinedTeamIdSet {
  [CmdletBinding()]
  [OutputType([System.Collections.Generic.HashSet[string]])]
@@ -305,6 +319,7 @@ function Get-DelegatedJoinedTeamIdSet {
  return ,$joinedTeamIds
 }
 
+# Extracts portable HTTP status and request ID details from Graph SDK exceptions.
 function Get-GraphErrorInfo {
  [CmdletBinding()]
  param(
@@ -363,6 +378,7 @@ function Get-GraphErrorInfo {
  }
 }
 
+# Preserves the failed Graph stage and channel identity across nested error handling.
 function New-GraphOperationException {
  [CmdletBinding()]
  [OutputType([System.Exception])]
@@ -390,6 +406,7 @@ function New-GraphOperationException {
  return $exception
 }
 
+# Validates Exchange only when the operator chooses date-based SDS discovery.
 function Test-ExchangeConnection {
  [CmdletBinding()]
  param()
@@ -408,6 +425,7 @@ function Test-ExchangeConnection {
  Write-Host 'Connected to Exchange Online.' -ForegroundColor Cyan
 }
 
+# Uses a server-side Exchange date filter to discover SDS Section class Teams.
 function Find-SDSClassTeamByDate {
  [CmdletBinding()]
  [OutputType([string[]])]
@@ -462,6 +480,7 @@ function Find-SDSClassTeamByDate {
  return ConvertTo-UniqueTeamId -Value $teamIds
 }
 
+# Presents the three supported input methods and returns a normalized Team ID list.
 function Show-InputMenu {
  [CmdletBinding()]
  [OutputType([string[]])]
@@ -487,6 +506,7 @@ function Show-InputMenu {
  } while ($true)
 }
 
+# Reads General-channel root posts and separates user, service, and hidden lifecycle events.
 function Get-TeamGeneralChannelActivity {
  [CmdletBinding()]
  param(
@@ -571,6 +591,7 @@ function Get-TeamGeneralChannelActivity {
  }
 }
 
+# Evaluates each Team independently so one Graph failure does not discard the batch.
 function Invoke-ClassChannelActivityReport {
  [CmdletBinding()]
  [OutputType([pscustomobject[]])]
@@ -684,6 +705,7 @@ function Invoke-ClassChannelActivityReport {
  return $results.ToArray()
 }
 
+# Writes a timestamped CSV and optionally opens it in the default application.
 function Export-ClassChannelActivityReport {
  [CmdletBinding()]
  [OutputType([string])]
@@ -714,6 +736,7 @@ function Export-ClassChannelActivityReport {
  return $outputPath
 }
 
+# Coordinates connection validation, input selection, reporting, summary, and export.
 function Invoke-ClassChannelActivityCheck {
  [CmdletBinding()]
  param(

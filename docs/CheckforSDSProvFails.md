@@ -67,6 +67,23 @@ Enter the search end date (yyyy-MM-dd, inclusive): 2026-08-31
 
 The Exchange query is restricted to the selected date range. The end date is inclusive.
 
+## Function and adjustment reference
+
+| Function or setting | Purpose | When to adjust |
+| --- | --- | --- |
+| `Read-SearchDateRange` | Validates `yyyy-MM-dd` input and converts the inclusive end date to an exclusive boundary. | Extend only if another input format is required; preserve the exclusive boundary used by filtering. |
+| `Invoke-SDSClassTeamWithoutSiteUrlReport` | Finds Team-enabled, hidden-membership groups with no SharePoint URL. | Add CSV columns only when downstream consumers are updated. |
+| `Invoke-SDSGroupNotTeamifiedReport` | Uses Graph to identify non-Team groups marked as SDS Sections. | Keep per-group failures recoverable so one group does not stop the report. |
+| `Test-GraphConnection` | Requires Graph commands, an active session, and `Group.Read.All` or `Group.ReadWrite.All`. | Add accepted scopes only when they truly grant the required group-read access. |
+| `Test-ExchangeConnection` | Confirms Exchange commands and an active organization session. | Normally no adjustment is needed. |
+| `$folderPath` | Controls where timestamped CSVs are written. | Change for retention, access control, or automation requirements. |
+
+Do not change `$SDSObjectTypeKey` or the `Section` comparison. They are service-defined SDS
+values. The script comments distinguish this constant from supported administrator settings.
+
+Keep the Exchange date filter server-side. Replacing it with `Get-UnifiedGroup -ResultSize
+unlimited` would turn the preferred diagnostic into a tenant-wide query.
+
 ## Output
 
 Reports are written to:

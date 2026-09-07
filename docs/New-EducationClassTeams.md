@@ -116,6 +116,45 @@ Example custom pattern:
 {SchoolYear} - {Subject} - Period {Period} - Section {Index}
 ```
 
+## Administrator customization points
+
+The configuration region distinguishes supported adjustments from SDS service-defined
+constants:
+
+| Setting | Purpose | Guidance |
+| --- | --- | --- |
+| `$script:RequiredScopes` | Scopes validated on the existing Graph session. | Change only when Graph operations are added or removed. |
+| `$script:GraphBaseUri` | Graph API endpoint. | Keep `v1.0` for production; test beta separately. |
+| `$script:GroupSettleSeconds` | Minimum delay between group batch creation and teamification. | Increase when large batches frequently need early retries; avoid reducing below 30 seconds. |
+| `$script:NamingTemplates` | Predefined naming choices shown to administrators. | Add organization-specific patterns using supported tokens. |
+| `$script:NamingTokens` | Prompt labels for custom naming tokens. | Adding a token is a developer change and should be tested with custom and predefined patterns. |
+
+Do not routinely modify:
+
+- `$script:EducationObjectTypeAttribute`
+- `$script:ClassCreationOptions`
+- `$script:ClassResourceBehaviorOptions`
+
+Those values define the SDS-style provisioning model and are service-defined rather than
+tenant-specific.
+
+## Function map
+
+Functions are grouped into regions and include comment-based help:
+
+| Region | Responsibilities |
+| --- | --- |
+| Prompt helpers | Numbered choices, required values, and yes/no confirmation |
+| Graph connection | Existing-session and delegated-scope validation |
+| Owner resolution | Resolve UPN/email or object ID to a Graph user |
+| Naming | Pattern selection, token expansion, conflict checks, and mail alias generation |
+| Team creation | Group creation, teamification retry classification, direct Team creation, and owner assignment |
+| Main | Interactive orchestration, two-phase group processing, and result summaries |
+
+Use PowerShell help to inspect an individual function after dot-sourcing the definitions in a
+development session. For normal operations, run the script directly rather than dot-sourcing
+it because the final line starts the interactive workflow.
+
 ## Non-activated creation and retries
 
 The non-activated path is intentionally divided into two phases:
