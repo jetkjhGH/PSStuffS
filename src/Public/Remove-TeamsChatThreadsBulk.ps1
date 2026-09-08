@@ -24,7 +24,7 @@ function Remove-TeamsChatThreadsBulk {
 
     begin {
         if ($TypedConfirmation -ne 'DELETE') {
-            throw "Bulk chat deletion requires -TypedConfirmation DELETE. Use -WhatIf with Get-TeamsChatDeletePlan first to preview targets."
+            throw "Bulk chat deletion requires -TypedConfirmation DELETE after reviewing the target preview."
         }
     }
 
@@ -35,7 +35,9 @@ function Remove-TeamsChatThreadsBulk {
                 Start-Sleep -Seconds $ThrottleSeconds
             }
             else {
-                New-TeamsChatAuditLog -Action 'BulkSoftDeleteChat' -ChatId $currentChatId -Status 'SkippedByShouldProcess' -Reason $Reason -AuditPath $AuditPath | Out-Null
+                if (-not $WhatIfPreference) {
+                    New-TeamsChatAuditLog -Action 'BulkSoftDeleteChat' -ChatId $currentChatId -Status 'SkippedByShouldProcess' -Reason $Reason -AuditPath $AuditPath | Out-Null
+                }
                 [pscustomobject]@{
                     ChatId = $currentChatId
                     Action = 'BulkSoftDeleteChat'

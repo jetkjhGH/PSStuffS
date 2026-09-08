@@ -26,7 +26,7 @@ function Get-TeamsChatDeletePlan {
                 GraphEndpoint = '/chats/{chat-id}'
                 GraphMethod = 'DELETE'
                 SupportsExecution = $capabilityState.SupportsSingleChatDeletion
-                RequiresWhatIfPreview = $true
+                RequiresExecutionConfirmation = $true
                 RequiresTypedConfirmation = if ($Mode -eq 'Bulk') { 'DELETE' } else { $currentChatId }
                 TenantThrottle = 'One delete request per second per tenant'
                 RestoreWindow = 'Seven days after soft-delete'

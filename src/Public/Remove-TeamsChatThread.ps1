@@ -27,7 +27,7 @@ function Remove-TeamsChatThread {
         }
 
         if (-not $Force -and $TypedConfirmation -ne $ChatId) {
-            throw ('Refusing to delete chat {0}. Pass -TypedConfirmation with the exact chat ID, or use -WhatIf to preview.' -f $ChatId)
+            throw ('Refusing to delete chat {0}. Pass -TypedConfirmation with the exact chat ID.' -f $ChatId)
         }
 
         $status = 'SkippedByShouldProcess'
@@ -46,7 +46,9 @@ function Remove-TeamsChatThread {
             throw
         }
         finally {
-            New-TeamsChatAuditLog -Action 'SoftDeleteChat' -ChatId $ChatId -Status $status -Reason $Reason -ErrorMessage $errorMessage -AuditPath $AuditPath | Out-Null
+            if (-not $WhatIfPreference) {
+                New-TeamsChatAuditLog -Action 'SoftDeleteChat' -ChatId $ChatId -Status $status -Reason $Reason -ErrorMessage $errorMessage -AuditPath $AuditPath | Out-Null
+            }
         }
 
         [pscustomobject]@{

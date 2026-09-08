@@ -66,74 +66,64 @@ TeamsChatAdmin-<version>/
   .\ChatManagementInterface.ps1 -UiMode Windows
   ```
 
-For deletion workflows, reconnect with deletion permissions after required tenant/admin consent is in place:
-
-```powershell
-Connect-MgGraph -Scopes Chat.ManageDeletion.All
-```
-
 The extracted package must keep `ChatManagementInterface.ps1` beside the `src` folder.
 
-## Requirements
+## Launch Options
 
-- Windows PC for GUI mode.
-- PowerShell 7 or later.
-- Microsoft Graph PowerShell SDK.
-- A Microsoft Graph connection with permissions appropriate to the workflow.
+| Mode | Command | When to use |
+| --- | --- | --- |
+| Prompt for UI | `.\ChatManagementInterface.ps1` | Normal admin launch. |
+| Terminal | `.\ChatManagementInterface.ps1 -UiMode Terminal` | Fallback for any PC or when GUI mode is unavailable. |
+| Windows GUI | `.\ChatManagementInterface.ps1 -UiMode Windows` | Windows desktop inspection experience. |
+| Capability check | `.\ChatManagementInterface.ps1 -NonInteractive` | Confirms module loading and current Graph capability without opening a menu. |
 
-Install PowerShell 7 from Microsoft if `pwsh` is not available. Install the Graph SDK for the current user:
+From the terminal menu, enter `G` to open the Windows GUI without restarting. Enter `10` to search for shared chat threads between two users; those results become the current row-number list for inspection or deletion.
 
-```powershell
-Install-Module Microsoft.Graph -Scope CurrentUser
-```
+The Windows GUI includes dedicated List Chats, Inspect One Chat, Inspect Multiple, Delete Chat, Restore Chat, Audit Log, and Help panels. Enable deletion and restore workflows from the Status panel. Delete and restore actions still require the correct Graph permission, session enablement, preview, and exact typed confirmation in a full-width dialog that handles long chat IDs.
 
-If execution policy blocks local scripts, allow scripts only for the current process:
+## Permissions
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-## Connect to Microsoft Graph
-
-Read-only inspection example:
+Read-only inspection uses chat read permissions. Start with:
 
 ```powershell
 Connect-MgGraph -Scopes Chat.ReadBasic.All, Chat.Read.All
 ```
 
-Deletion-capable example, subject to tenant policy and admin consent:
+Direct inspection checks active chats first. If an active chat lookup returns not found and the current Graph context has deletion permission, the tool also checks `GET /teamwork/deletedChats/{deletedChatId}` and reports deleted threads as `ChatStatus = Deleted`.
+
+Deletion workflows require separate tenant approval and stronger permissions. Connect with deletion permission only when deletion is explicitly required and approved:
 
 ```powershell
 Connect-MgGraph -Scopes Chat.ManageDeletion.All
 ```
 
-The tool does not store credentials and does not call `Connect-MgGraph` automatically.
+The tool does not store credentials, install modules, or call `Connect-MgGraph` automatically. App-only use requires equivalent application permissions consented in Entra ID.
 
-## Launch
+Interactive deletion workflows show a target preview and then require explicit typed confirmation. Direct command use still supports `-WhatIf`; it previews deletion requests only and does not create the audit directory or write an audit CSV because no deletion request was sent.
 
-From the package folder:
+## What Admins Can Change
 
-```powershell
-.\ChatManagementInterface.ps1
+| Need | How to change it | Warning |
+| --- | --- | --- |
+| Use GUI or terminal | Choose at launch or pass `-UiMode` | GUI mode requires Windows Forms; terminal mode remains the fallback. |
+| Run from another folder | Move the whole extracted folder | Do not separate `ChatManagementInterface.ps1` from `src`. |
+| Execution policy | Use `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` | Avoid machine-wide policy changes unless your organization requires them. |
+| Graph permissions | Reconnect with the scopes needed for the task | Deletion scopes should be used only after approval and admin consent. |
+| Audit retention | Copy `%TEMP%\EDU Scripts\TeamsChatAdmin\TeamsChatAdminAudit.csv` to an approved location | `%TEMP%` is not a durable retention location. |
+
+Changing module files, Graph endpoints, permission gates, deletion confirmation, throttling, or restore behavior is a developer change. Test those changes in a non-production tenant before use.
+
+## Restore Deleted Chats
+
+Deleted-chat restore uses the Microsoft Graph `undoDelete` API:
+
+```http
+POST /teamwork/deletedChats/{deletedChatId}/undoDelete
 ```
 
-Force terminal mode:
+In the terminal interface, option 7 lists restore candidates from the current audit log and `*TeamsChatAdminAudit*.csv` files in the working folder. You can also paste a deleted chat ID directly. Restore requires deletion permission, deletion/restore mode enabled for the session, execution confirmation, and typing the exact deleted chat ID.
 
-```powershell
-.\ChatManagementInterface.ps1 -UiMode Terminal
-```
-
-Force Windows GUI mode:
-
-```powershell
-.\ChatManagementInterface.ps1 -UiMode Windows
-```
-
-Noninteractive capability check:
-
-```powershell
-.\ChatManagementInterface.ps1 -NonInteractive
-```
+The restore window is seven days after soft-delete. Restore operations are not supported for non-admin users.
 
 ## Output and Audit Path
 

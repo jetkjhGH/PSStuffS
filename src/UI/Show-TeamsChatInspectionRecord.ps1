@@ -8,6 +8,7 @@ function Show-TeamsChatInspectionRecord {
     process {
         $details = [pscustomobject]@{
             Index = $Chat.Index
+            ChatStatus = $Chat.ChatStatus
             ChatType = $Chat.ChatType
             ParticipantDetails = $Chat.ParticipantDetails
             Topic = $Chat.Topic

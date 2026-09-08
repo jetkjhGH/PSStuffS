@@ -46,6 +46,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 See the individual guides for required connections and scopes.
 
+## Using The Guides
+
+Each guide is written for an admin operator: start with **Purpose** to confirm why the script exists, then review **Requirements/Connect** before running it. Use each guide's configuration, adjustment, or troubleshooting section for supported tweaks. Warnings call out changes that alter report meaning, tenant scope, Graph permissions, or tenant-writing behavior and should be tested in a non-production tenant first.
+
 Create a portable Teams Chat Admin customer package with:
 
 ```powershell

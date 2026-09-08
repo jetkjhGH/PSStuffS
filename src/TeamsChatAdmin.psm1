@@ -23,6 +23,8 @@ Export-ModuleMember -Function @(
     'Start-TeamsChatAdmin',
     'Invoke-TeamsChatAdminInteractive',
     'Get-TeamsChatAuditLog',
+    'Get-TeamsChatRestoreCandidate',
+    'Get-TeamsChatBetweenUsers',
     'Get-TeamsChatByUser',
     'Get-TeamsChatThread',
     'Get-TeamsChatDeletePlan',
@@ -30,5 +32,6 @@ Export-ModuleMember -Function @(
     'Get-TeamsChatCapabilityMatrix',
     'Remove-TeamsChatThread',
     'Remove-TeamsChatThreadsBulk',
+    'Restore-TeamsChatDeletedThread',
     'Test-TeamsChatGraphAccess'
 )

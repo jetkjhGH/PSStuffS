@@ -48,9 +48,15 @@ function ConvertTo-TeamsChatRecord {
             }
         }
         $lastMessagePreviewText = ConvertTo-TeamsChatPlainText -Content (Get-TeamsChatObjectValue -InputObject $lastMessagePreviewBody -Name 'content')
+        $chatStatus = Get-TeamsChatObjectValue -InputObject $Chat -Name 'chatStatus'
+        if ([string]::IsNullOrWhiteSpace($chatStatus)) {
+            $odataType = Get-TeamsChatObjectValue -InputObject $Chat -Name '@odata.type'
+            $chatStatus = if ($odataType -match 'deletedChat') { 'Deleted' } else { 'Active' }
+        }
 
         [pscustomobject]@{
             ChatId = Get-TeamsChatObjectValue -InputObject $Chat -Name 'id'
+            ChatStatus = $chatStatus
             Topic = Get-TeamsChatObjectValue -InputObject $Chat -Name 'topic'
             ChatType = Get-TeamsChatObjectValue -InputObject $Chat -Name 'chatType'
             CreatedDateTime = Get-TeamsChatObjectValue -InputObject $Chat -Name 'createdDateTime'

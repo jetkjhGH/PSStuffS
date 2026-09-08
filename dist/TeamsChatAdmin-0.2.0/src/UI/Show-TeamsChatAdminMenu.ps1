@@ -12,25 +12,23 @@ function Show-TeamsChatAdminMenu {
     Write-Host ''
     Write-Host '1. Status and capability details'
     Write-Host '2. List chats for a user, then select a row'
-    if ($SessionState.CapabilityState.HasDeletionPermission) {
-        Write-Host '3. Inspect and preview/delete one chat'
-        Write-Host '4. Inspect and preview/delete multiple chats'
-    }
-    else {
-        Write-Host '3. Inspect one chat from the last list'
-        Write-Host '4. Inspect multiple chats from pasted IDs, last list, or CSV'
-    }
-    Write-Host '5. View audit log'
-    Write-Host '6. Restore deleted chat (not executable until Graph restore endpoint is verified)'
+    Write-Host '3. Inspect one chat'
+    Write-Host '4. Inspect multiple chats'
+    Write-Host '5. Preview and delete one chat'
+    Write-Host '6. Preview and delete multiple chats'
+    Write-Host '7. Restore deleted chat from audit logs or pasted ID'
+    Write-Host '8. View audit log'
     if ($SessionState.AllowDestructiveActions) {
-        Write-Host '7. Disable deletion workflows for this session'
+        Write-Host '9. Disable deletion and restore workflows for this session'
     }
     elseif ($SessionState.CapabilityState.HasDeletionPermission) {
-        Write-Host '7. Enable deletion workflows for this session'
+        Write-Host '9. Enable deletion and restore workflows for this session'
     }
     else {
-        Write-Host '7. Explain deletion permission requirements'
+        Write-Host '9. Explain deletion and restore permission requirements'
     }
+    Write-Host '10. Search threads between two users'
+    Write-Host 'G. Launch Windows GUI'
     Write-Host 'H. Help'
     Write-Host 'Q. Quit'
     Write-Host ''

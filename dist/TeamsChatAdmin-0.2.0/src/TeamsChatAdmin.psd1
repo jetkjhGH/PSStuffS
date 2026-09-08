@@ -12,6 +12,8 @@
         'Start-TeamsChatAdmin',
         'Invoke-TeamsChatAdminInteractive',
         'Get-TeamsChatAuditLog',
+        'Get-TeamsChatRestoreCandidate',
+        'Get-TeamsChatBetweenUsers',
         'Get-TeamsChatByUser',
         'Get-TeamsChatThread',
         'Get-TeamsChatDeletePlan',
@@ -19,6 +21,7 @@
         'Get-TeamsChatCapabilityMatrix',
         'Remove-TeamsChatThread',
         'Remove-TeamsChatThreadsBulk',
+        'Restore-TeamsChatDeletedThread',
         'Test-TeamsChatGraphAccess'
     )
     CmdletsToExport = @()
@@ -28,7 +31,7 @@
             Tags = @('Teams', 'MicrosoftGraph', 'Chat', 'PowerShell')
             ProjectUri = 'https://github.com/jetkjhGH/PSStuffS'
             LicenseUri = ''
-            ReleaseNotes = 'Portable Teams Chat Admin package with corrected launcher, compatibility wrapper, Windows Forms inspection GUI, and guarded terminal deletion workflows.'
+            ReleaseNotes = 'Portable Teams Chat Admin package with Windows Forms inspection GUI, guarded deletion workflows, audit-backed restore candidates, deleted-chat restore support, and user-pair chat search.'
         }
     }
 }

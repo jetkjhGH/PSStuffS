@@ -24,6 +24,19 @@ function Invoke-TeamsChatAdminInteractive {
     do {
         $SessionState.CapabilityState = Get-TeamsChatCapabilityProfile -DeletionSessionEnabled:$SessionState.AllowDestructiveActions
         $selection = if ($selectionMode -eq 'Windows') { Show-TeamsChatAdminWindowsMenu -SessionState $SessionState } else { Show-TeamsChatAdminMenu -SessionState $SessionState }
+        $requestedSelection = $selection.ToUpperInvariant()
+        $inspectionOnly = $requestedSelection -in @('3', '4')
+
+        switch ($requestedSelection) {
+            '5' { $selection = '3' }
+            '6' { $selection = '4' }
+            '7' { $selection = '6' }
+            '8' { $selection = '5' }
+            '9' { $selection = '7' }
+            '10' { $selection = '10' }
+            'G' { $selection = 'G' }
+            default { $selection = $requestedSelection }
+        }
 
         switch ($selection.ToUpperInvariant()) {
             '1' {
@@ -55,6 +68,7 @@ function Invoke-TeamsChatAdminInteractive {
                         $chat = $chats[$index]
                         [pscustomobject]@{
                             Index = $index + 1
+                            ChatStatus = $chat.ChatStatus
                             ChatType = $chat.ChatType
                             Participants = $chat.ParticipantDisplayNames
                             ParticipantDetails = $chat.ParticipantSummary
@@ -80,7 +94,7 @@ function Invoke-TeamsChatAdminInteractive {
                             $previewText = if ([string]::IsNullOrWhiteSpace($chatRow.LastMessagePreviewSnippet)) { '[no preview text returned]' } else { $chatRow.LastMessagePreviewSnippet }
                             $previewDate = if ($null -eq $chatRow.LastMessagePreviewDateTime) { '[no preview timestamp]' } else { $chatRow.LastMessagePreviewDateTime }
 
-                            Write-Host ('{0,3}. [{1}] {2}' -f $chatRow.Index, $chatRow.ChatType, $topic) -ForegroundColor Cyan
+                            Write-Host ('{0,3}. [{1}/{2}] {3}' -f $chatRow.Index, $chatRow.ChatType, $chatRow.ChatStatus, $topic) -ForegroundColor Cyan
                             Write-Host ('     People : {0}' -f $participants)
                             Write-Host ('     Preview: {0} | {1} | {2}' -f $previewFrom, $previewDate, $previewText)
                         }
@@ -97,7 +111,7 @@ function Invoke-TeamsChatAdminInteractive {
                         Write-Warning 'No chat list is stored yet. Run option 2 first or paste a full chat ID.'
                     }
                     else {
-                        $SessionState.LastChatResults | Format-List Index, ChatType, ParticipantDetails, Topic, LastMessagePreviewFrom, LastMessagePreviewText, ChatId
+                        $SessionState.LastChatResults | Format-List Index, ChatStatus, ChatType, ParticipantDetails, Topic, LastMessagePreviewFrom, LastMessagePreviewText, ChatId
                     }
                     $chatId = Read-Host 'Chat ID or row number'
                 }
@@ -117,6 +131,7 @@ function Invoke-TeamsChatAdminInteractive {
                         $directChat = Get-TeamsChatThread -ChatId $chatId -IncludeMembers -IncludeLastMessagePreview
                         $selectedChat = [pscustomobject]@{
                             Index = $null
+                            ChatStatus = $directChat.ChatStatus
                             ChatType = $directChat.ChatType
                             Participants = $directChat.ParticipantDisplayNames
                             ParticipantDetails = $directChat.ParticipantSummary
@@ -150,8 +165,12 @@ function Invoke-TeamsChatAdminInteractive {
                     Write-Host 'No cached participant or preview details are available for that chat ID. Run option 2 first and select a row for full inspection context.' -ForegroundColor Yellow
                 }
 
+                if ($inspectionOnly) {
+                    continue
+                }
+
                 if (-not $SessionState.CapabilityState.HasDeletionPermission) {
-                    Write-Warning 'Deletion is not available in the current Graph context, so no deletion preview was created. Use this inspection output to confirm the thread, then reconnect with Chat.ManageDeletion.All or Chat.ManageDeletion.Chat if deletion is required.'
+                    Write-Warning 'Deletion is not available in the current Graph context. Reconnect with Chat.ManageDeletion.All or Chat.ManageDeletion.Chat if deletion is required.'
                     continue
                 }
 
@@ -167,13 +186,8 @@ function Invoke-TeamsChatAdminInteractive {
                         continue
                     }
                     if (-not $SessionState.AllowDestructiveActions) {
-                        Write-Warning 'Deletion permission exists, but deletion workflows are disabled for this session. Choose option 7 to enable them.'
+                        Write-Warning 'Deletion permission exists, but deletion workflows are disabled for this session. Choose option 9 to enable them.'
                         continue
-                    }
-
-                    $runWhatIf = Read-Host 'Run WhatIf preview now? Type Y to preview, or press Enter to skip'
-                    if ($runWhatIf.Trim().ToUpperInvariant() -eq 'Y') {
-                        Remove-TeamsChatThread -ChatId $chatId -Reason $reason -TypedConfirmation $chatId -AuditPath $SessionState.AuditPath -WhatIf
                     }
 
                     $execute = Read-Host 'Execute the deletion now? Type Y to continue, or press Enter to cancel'
@@ -260,6 +274,7 @@ function Invoke-TeamsChatAdminInteractive {
                         $directChat = Get-TeamsChatThread -ChatId $currentChatId -IncludeMembers -IncludeLastMessagePreview
                         $matchedChats.Add([pscustomobject]@{
                             Index = $null
+                            ChatStatus = $directChat.ChatStatus
                             ChatType = $directChat.ChatType
                             Participants = $directChat.ParticipantDisplayNames
                             ParticipantDetails = $directChat.ParticipantSummary
@@ -300,8 +315,12 @@ function Invoke-TeamsChatAdminInteractive {
                     Write-Host 'Confirm the chat ID and current Graph permissions, then retry.' -ForegroundColor Yellow
                 }
 
+                if ($inspectionOnly) {
+                    continue
+                }
+
                 if (-not $SessionState.CapabilityState.HasDeletionPermission) {
-                    Write-Warning 'Deletion is not available in the current Graph context, so no bulk deletion preview was created. Use this inspection output to confirm targets, then reconnect with Chat.ManageDeletion.All or Chat.ManageDeletion.Chat if deletion is required.'
+                    Write-Warning 'Deletion is not available in the current Graph context. Reconnect with Chat.ManageDeletion.All or Chat.ManageDeletion.Chat if deletion is required.'
                     continue
                 }
 
@@ -311,13 +330,8 @@ function Invoke-TeamsChatAdminInteractive {
                 Get-TeamsChatDeletePlan -ChatId $uniqueChatIds.ToArray() -Mode Bulk -Reason $reason | Format-Table ChatId, SupportsExecution, RequiresTypedConfirmation -AutoSize
 
                 if (-not $SessionState.AllowDestructiveActions) {
-                    Write-Warning 'Deletion permission exists, but deletion workflows are disabled for this session. Choose option 7 to enable them.'
+                    Write-Warning 'Deletion permission exists, but deletion workflows are disabled for this session. Choose option 9 to enable them.'
                     continue
-                }
-
-                $runWhatIf = Read-Host 'Run bulk WhatIf preview now? Type Y to preview, or press Enter to skip'
-                if ($runWhatIf.Trim().ToUpperInvariant() -eq 'Y') {
-                    Remove-TeamsChatThreadsBulk -ChatId $uniqueChatIds.ToArray() -Reason $reason -TypedConfirmation DELETE -AuditPath $SessionState.AuditPath -WhatIf
                 }
 
                 $execute = Read-Host 'Execute bulk deletion now? Type Y to continue, or press Enter to cancel'
@@ -342,24 +356,151 @@ function Invoke-TeamsChatAdminInteractive {
                 }
             }
             '6' {
-                Write-Warning 'Restore is intentionally disabled until the exact Microsoft Graph restore endpoint is verified in public documentation for this API surface.'
+                if (-not $SessionState.CapabilityState.HasDeletionPermission) {
+                    Write-Host 'Deleted-chat restore requires Chat.ManageDeletion.All delegated permission or Chat.ManageDeletion.Chat / Chat.ManageDeletion.All application permission. The documented endpoint is POST /teamwork/deletedChats/{deletedChatId}/undoDelete.' -ForegroundColor Yellow
+                    continue
+                }
+                if (-not $SessionState.AllowDestructiveActions) {
+                    Write-Warning 'Restore permission exists, but deletion/restore workflows are disabled for this session. Choose option 9 to enable them.'
+                    continue
+                }
+
+                $restoreCandidates = @(Get-TeamsChatRestoreCandidate -AuditPath @($SessionState.AuditPath) -WorkingDirectory (Get-Location).Path)
+                if ($restoreCandidates.Count -gt 0) {
+                    Write-Host ''
+                    Write-Host 'Deleted chat restore candidates from audit logs' -ForegroundColor Cyan
+                    $restoreCandidates | Format-Table Index, DeletedTimestampUtc, ChatId, DeleteReason -AutoSize -Wrap
+                }
+                else {
+                    Write-Warning 'No deleted chat candidates were found in the current audit log or working-folder TeamsChatAdmin audit logs.'
+                }
+
+                $restoreInput = Read-Host 'Enter candidate index or deleted chat ID to restore'
+                if ([string]::IsNullOrWhiteSpace($restoreInput)) {
+                    Write-Host 'Restore cancelled. No restore request was sent.' -ForegroundColor Yellow
+                    continue
+                }
+
+                $deletedChatId = $restoreInput.Trim()
+                if ($deletedChatId -match '^\d+$' -and $restoreCandidates.Count -gt 0) {
+                    $candidate = $restoreCandidates | Where-Object { $_.Index -eq [int]$deletedChatId } | Select-Object -First 1
+                    if ($candidate) {
+                        $deletedChatId = $candidate.ChatId
+                    }
+                }
+
+                Write-Host ''
+                Write-Host 'Restore preview' -ForegroundColor Cyan
+                [pscustomobject]@{
+                    DeletedChatId = $deletedChatId
+                    GraphEndpoint = '/teamwork/deletedChats/{deletedChatId}/undoDelete'
+                    GraphMethod = 'POST'
+                    SupportsExecution = $SessionState.CapabilityState.SupportsDeletedChatRestore
+                    RequiresTypedConfirmation = $deletedChatId
+                } | Format-List
+
+                $reason = Read-Host 'Reason for restore'
+                $execute = Read-Host 'Execute the restore now? Type Y to continue, or press Enter to cancel'
+                if ($execute.Trim().ToUpperInvariant() -ne 'Y') {
+                    Write-Host 'Restore cancelled. No restore request was sent.' -ForegroundColor Yellow
+                    continue
+                }
+
+                $typedConfirmation = Read-Host ('Type the exact deleted chat ID to confirm restore: {0}' -f $deletedChatId)
+                $result = Restore-TeamsChatDeletedThread -DeletedChatId $deletedChatId -Reason $reason -TypedConfirmation $typedConfirmation -AuditPath $SessionState.AuditPath -Confirm:$false
+                $result | Format-List
             }
             '7' {
                 if ($SessionState.CapabilityState.HasDeletionPermission) {
                     $SessionState.AllowDestructiveActions = -not $SessionState.AllowDestructiveActions
                     $SessionState.CapabilityState = Get-TeamsChatCapabilityProfile -DeletionSessionEnabled:$SessionState.AllowDestructiveActions
-                    Write-Host ('Deletion workflows enabled for this session: {0}' -f $SessionState.AllowDestructiveActions) -ForegroundColor Yellow
+                    Write-Host ('Deletion and restore workflows enabled for this session: {0}' -f $SessionState.AllowDestructiveActions) -ForegroundColor Yellow
                 }
                 else {
-                    Write-Host 'Deletion requires Chat.ManageDeletion.All delegated permission or Chat.ManageDeletion.Chat / Chat.ManageDeletion.All application permission, plus tenant/admin constraints for the delete API.' -ForegroundColor Yellow
+                    Write-Host 'Deletion and restore require Chat.ManageDeletion.All delegated permission or Chat.ManageDeletion.Chat / Chat.ManageDeletion.All application permission, plus tenant/admin constraints for the API.' -ForegroundColor Yellow
                 }
+            }
+            '10' {
+                $userId = Read-Host 'First user ID or UPN'
+                $otherUser = Read-Host 'Second user ID, UPN, email, or display name'
+                if ([string]::IsNullOrWhiteSpace($userId) -or [string]::IsNullOrWhiteSpace($otherUser)) {
+                    Write-Warning 'Both users are required.'
+                    continue
+                }
+
+                $allRows = Read-Host 'Load all pages for the first user? Type Y for all pages, or press Enter for the first page'
+                try {
+                    $chats = @(Get-TeamsChatBetweenUsers -UserId $userId -OtherUser $otherUser -All:($allRows.Trim().ToUpperInvariant() -eq 'Y'))
+                }
+                catch {
+                    if ((Test-TeamsChatGraphAuthenticationError -ErrorRecord $_) -or $_.Exception.Message -match 'token is expired|expired or invalid|InvalidAuthenticationToken') {
+                        Write-Warning $_.Exception.Message
+                        Write-Host 'Reconnect example for read inspection:' -ForegroundColor Yellow
+                        Write-Host 'Connect-MgGraph -Scopes Chat.ReadBasic.All, Chat.Read.All' -ForegroundColor Yellow
+                        continue
+                    }
+
+                    throw
+                }
+
+                $indexedChats = for ($index = 0; $index -lt $chats.Count; $index++) {
+                    $chat = $chats[$index]
+                    [pscustomobject]@{
+                        Index = $index + 1
+                        ChatStatus = $chat.ChatStatus
+                        ChatType = $chat.ChatType
+                        Participants = $chat.ParticipantDisplayNames
+                        ParticipantDetails = $chat.ParticipantSummary
+                        Topic = $chat.Topic
+                        LastUpdatedDateTime = $chat.LastUpdatedDateTime
+                        LastMessagePreviewDateTime = $chat.LastMessagePreviewDateTime
+                        LastMessagePreviewFrom = $chat.LastMessagePreviewFrom
+                        LastMessagePreviewText = $chat.LastMessagePreviewText
+                        LastMessagePreviewSnippet = $chat.LastMessagePreviewSnippet
+                        ChatId = $chat.ChatId
+                    }
+                }
+
+                $SessionState.LastChatResults = @($indexedChats)
+                if ($indexedChats.Count -eq 0) {
+                    Write-Warning 'No shared chat threads were found for those users in the selected page scope.'
+                    continue
+                }
+
+                Write-Host ''
+                Write-Host ('Found {0} shared thread(s). Results are stored for row-number inspection/deletion.' -f $indexedChats.Count) -ForegroundColor Cyan
+                foreach ($chatRow in $indexedChats) {
+                    $topic = if ([string]::IsNullOrWhiteSpace($chatRow.Topic)) { '[no topic]' } else { $chatRow.Topic }
+                    $participants = if ([string]::IsNullOrWhiteSpace($chatRow.Participants)) { '[participants not returned]' } else { Format-TeamsChatTextSnippet -Text $chatRow.Participants -MaximumLength 140 }
+                    $previewFrom = if ([string]::IsNullOrWhiteSpace($chatRow.LastMessagePreviewFrom)) { '[unknown sender]' } else { $chatRow.LastMessagePreviewFrom }
+                    $previewText = if ([string]::IsNullOrWhiteSpace($chatRow.LastMessagePreviewSnippet)) { '[no preview text returned]' } else { $chatRow.LastMessagePreviewSnippet }
+                    $previewDate = if ($null -eq $chatRow.LastMessagePreviewDateTime) { '[no preview timestamp]' } else { $chatRow.LastMessagePreviewDateTime }
+
+                    Write-Host ('{0,3}. [{1}/{2}] {3}' -f $chatRow.Index, $chatRow.ChatType, $chatRow.ChatStatus, $topic) -ForegroundColor Cyan
+                    Write-Host ('     People : {0}' -f $participants)
+                    Write-Host ('     Preview: {0} | {1} | {2}' -f $previewFrom, $previewDate, $previewText)
+                }
+            }
+            'G' {
+                $guiAvailability = Test-TeamsChatWindowsGuiAvailable
+                if (-not $guiAvailability.IsAvailable) {
+                    Write-Warning $guiAvailability.Reason
+                    continue
+                }
+
+                Start-TeamsChatWindowsGui -SessionState $SessionState
+                $selectionMode = 'Terminal'
             }
             'H' {
                 Write-Host ''
                 Write-Host 'Help' -ForegroundColor Cyan
-                Write-Host 'List chats first when possible. The interface keeps the last chat list and lets you choose a row number for deletion.'
-                Write-Host 'Deletion is a session mode. It requires Graph deletion permission and must be enabled from option 7.'
-                Write-Host 'Every deletion flow shows a preview, can run WhatIf, requires typed confirmation, and writes to the audit log.'
+                Write-Host 'List chats first when possible. The interface keeps the last chat list and lets you choose a row number for inspection or deletion.'
+                Write-Host 'Use option 10 to search for shared chat threads between two users; results become the current row-number list.'
+                Write-Host 'Use G to launch the Windows GUI from terminal mode.'
+                Write-Host 'Inspection options never ask deletion questions. Use options 5 and 6 when you intend to delete.'
+                Write-Host 'Deletion and restore are session workflows. They require Graph deletion permission and must be enabled from option 9.'
+                Write-Host 'Restore uses the documented deletedChat undoDelete endpoint and can use deleted chat IDs from audit logs or pasted input.'
+                Write-Host 'Every interactive deletion flow shows a preview, requires typed confirmation, and writes to the audit log only when an action is attempted.'
                 Write-Host ('Audit log: {0}' -f $SessionState.AuditPath)
             }
             'Q' {

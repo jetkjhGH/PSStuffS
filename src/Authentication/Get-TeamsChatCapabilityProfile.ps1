@@ -68,7 +68,7 @@ function Get-TeamsChatCapabilityProfile {
         SupportsSingleChatDeletion = $deleteEnabled
         SupportsBulkChatDeletion = $deleteEnabled
         SupportsDeletedChatRestore = $restoreEnabled
-        Warning = if ($deleteEnabled) { 'Deletion workflows are enabled for this session. Every deletion still requires preview, WhatIf, typed confirmation, and audit logging.' } elseif ($hasDeletionPermission) { 'Deletion permission is present, but deletion workflows are disabled for this session until enabled from the interface.' } else { 'Deletion workflows are unavailable because the current Graph context lacks Chat.ManageDeletion.All or Chat.ManageDeletion.Chat.' }
+        Warning = if ($deleteEnabled) { 'Deletion and restore workflows are enabled for this session. Every action still requires preview, typed confirmation, and audit logging.' } elseif ($hasDeletionPermission) { 'Deletion and restore permission is present, but those workflows are disabled for this session until enabled from the interface.' } else { 'Deletion and restore workflows are unavailable because the current Graph context lacks Chat.ManageDeletion.All or Chat.ManageDeletion.Chat.' }
         Capabilities = @(
             [pscustomobject]@{
                 Feature = 'List chats'
@@ -112,7 +112,7 @@ function Get-TeamsChatCapabilityProfile {
             },
             [pscustomobject]@{
                 Feature = 'Restore deleted chat'
-                Status = if ($restoreEnabled) { 'EndpointVerificationPending' } elseif ($hasDeletionPermission) { 'DisabledBySessionChoiceAndEndpointVerification' } else { 'MissingPermission' }
+                Status = if ($restoreEnabled) { 'AvailableWithConfirmation' } elseif ($hasDeletionPermission) { 'DisabledBySessionChoice' } else { 'MissingPermission' }
                 GraphVersion = 'v1.0'
                 Delegated = 'Chat.ManageDeletion.All'
                 Application = 'Chat.ManageDeletion.Chat, Chat.ManageDeletion.All'

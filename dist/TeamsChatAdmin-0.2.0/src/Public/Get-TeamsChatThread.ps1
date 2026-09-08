@@ -14,14 +14,38 @@ function Get-TeamsChatThread {
     )
 
     $capabilityState = Get-TeamsChatCapabilityProfile
-    if (-not $capabilityState.SupportsReadReports) {
-        throw 'The current Graph context does not include a supported chat read permission. Connect with Chat.ReadBasic, Chat.Read, Chat.ReadWrite, Chat.ReadBasic.All, Chat.Read.All, or Chat.ReadWrite.All.'
+    if (-not $capabilityState.SupportsReadReports -and -not $capabilityState.HasDeletionPermission) {
+        throw 'The current Graph context does not include supported chat read or deleted-chat inspection permission. Connect with Chat.ReadBasic, Chat.Read, Chat.ReadWrite, Chat.ReadBasic.All, Chat.Read.All, Chat.ReadWrite.All, Chat.ManageDeletion.All, or Chat.ManageDeletion.Chat.'
     }
 
     $escapedChatId = [System.Uri]::EscapeDataString($ChatId)
-    $chat = Invoke-TeamsChatGraphObjectRequest -Uri ('https://graph.microsoft.com/v1.0/chats/{0}' -f $escapedChatId)
+    $isDeletedChat = $false
+    if ($capabilityState.SupportsReadReports) {
+        try {
+            $chat = Invoke-TeamsChatGraphObjectRequest -Uri ('https://graph.microsoft.com/v1.0/chats/{0}' -f $escapedChatId)
+        }
+        catch {
+            $graphErrorMessage = '{0} {1}' -f $_.ToString(), $_.Exception.Message
+            $isNotFound = $graphErrorMessage -match '404\s+NotFound' -or $graphErrorMessage -match 'NotFound\s+\(Not Found\)' -or $graphErrorMessage -match '\bNot Found\b'
+            if (-not $isNotFound) {
+                throw
+            }
+
+            if (-not $capabilityState.HasDeletionPermission) {
+                throw ('Chat {0} was not found as an active chat. Deleted-chat inspection requires Chat.ManageDeletion.All or Chat.ManageDeletion.Chat.' -f $ChatId)
+            }
+
+            $chat = Invoke-TeamsChatGraphObjectRequest -Uri ('https://graph.microsoft.com/v1.0/teamwork/deletedChats/{0}' -f $escapedChatId)
+            $isDeletedChat = $true
+        }
+    }
+    else {
+        $chat = Invoke-TeamsChatGraphObjectRequest -Uri ('https://graph.microsoft.com/v1.0/teamwork/deletedChats/{0}' -f $escapedChatId)
+        $isDeletedChat = $true
+    }
+
     $members = @()
-    if ($IncludeMembers) {
+    if ($IncludeMembers -and -not $isDeletedChat) {
         $members = @(Invoke-TeamsChatGraphCollectionRequest -Uri ('https://graph.microsoft.com/v1.0/chats/{0}/members' -f $escapedChatId) -All)
     }
 
@@ -50,6 +74,7 @@ function Get-TeamsChatThread {
         lastUpdatedDateTime = Get-TeamsChatObjectValue -InputObject $chat -Name 'lastUpdatedDateTime'
         webUrl = Get-TeamsChatObjectValue -InputObject $chat -Name 'webUrl'
         isHiddenForAllMembers = Get-TeamsChatObjectValue -InputObject $chat -Name 'isHiddenForAllMembers'
+        chatStatus = if ($isDeletedChat) { 'Deleted' } else { 'Active' }
         members = $members
         lastMessagePreview = $lastMessagePreview
     } | ConvertTo-TeamsChatRecord

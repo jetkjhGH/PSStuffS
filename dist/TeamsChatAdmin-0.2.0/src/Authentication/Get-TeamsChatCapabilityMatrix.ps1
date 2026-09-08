@@ -77,22 +77,22 @@ function Get-TeamsChatCapabilityMatrix {
             RawRestFallback = 'DELETE /chats/{chat-id}'
             KnownRestriction = '7-day restore window; one delete request per second per tenant; not supported for channel chat threads'
             DestructiveOperation = $true
-            ConfirmationRequirement = 'Required: preview + typed confirmation + WhatIf'
+            ConfirmationRequirement = 'Required: preview + typed confirmation'
         },
         [pscustomobject]@{
             Feature = 'Restore deleted chat'
-            Endpoint = 'Pending public endpoint verification'
+            Endpoint = '/teamwork/deletedChats/{deletedChatId}/undoDelete'
             Method = 'POST'
-            GraphVersion = 'v1.0 capability documented by delete restore window; endpoint must be verified before execution is enabled'
+            GraphVersion = 'v1.0'
             DelegatedPermission = 'Chat.ManageDeletion.All'
             ApplicationPermission = 'Chat.ManageDeletion.Chat, Chat.ManageDeletion.All'
             RequiredAdminRole = 'Tenant admin or Teams service admin constraints apply to delegated admin operations'
             SupportedChatType = '1:1, group, meeting; not channel threads'
-            PowerShellSdkCommand = 'Pending SDK command verification'
-            RawRestFallback = 'Disabled until endpoint is verified'
-            KnownRestriction = 'Restore window is seven days after soft-delete according to delete documentation'
+            PowerShellSdkCommand = 'Undo-MgTeamworkDeletedChatDelete'
+            RawRestFallback = 'POST /teamwork/deletedChats/{deletedChatId}/undoDelete'
+            KnownRestriction = 'Restore window is seven days after soft-delete; operation is not supported for non-admin users'
             DestructiveOperation = $true
-            ConfirmationRequirement = 'Required: preview + typed confirmation + WhatIf once endpoint verification is complete'
+            ConfirmationRequirement = 'Required: audit-derived or pasted target + typed confirmation'
         }
     )
 }
