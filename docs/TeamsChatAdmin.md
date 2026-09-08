@@ -4,7 +4,7 @@
 
 ## What it does
 
-Use this tool to inspect Teams chat threads before taking administrative action. It helps an admin identify the right thread by user, participant list, topic, last-message preview, and chat ID.
+Use this tool to inspect Teams chat threads before taking administrative action. It helps an admin find the right user by UPN or name, then identify the right thread by participant list, topic, creation time, last-message preview, message count, and chat ID.
 
 The module currently provides:
 
@@ -78,6 +78,8 @@ Windows GUI mode, when Windows Forms is available:
 
 The Windows GUI keeps normal selections, chat listing, single-chat inspection, bulk inspection, delete, restore, audit viewing, and help output inside the GUI. Enable deletion and restore workflows from the Status panel when the current Graph context has deletion permission. List, inspect, bulk, delete, and restore inputs/results are preserved while moving between panels. Selecting a row in List Chats stores that chat as the current selection; Inspect One Chat and Delete Chat can both use that current chat ID. The Delete Chat panel can preview and delete a chat with exact typed confirmation in a full-width confirmation dialog for long chat IDs. The Restore Chat panel can load audit-log candidates or accept a pasted deleted chat ID, preview the restore, and execute it with typed confirmation. Terminal mode remains the cross-platform fallback.
 
+In the List Chats panel, select **Find user** to search Microsoft Entra users by UPN, display name, first name, or last name. Searches require at least three characters. Double-click a matching result to place its UPN in the User field, then load that user's chats. In the terminal menu, select `U`, choose a numbered result, then select option `2` and press Enter to use that selected user. Directory search requires an appropriate Microsoft Graph user-directory read permission in addition to the chat permissions.
+
 Noninteractive capability check:
 
 ```powershell
@@ -124,6 +126,14 @@ Get-TeamsChatByUser -UserId user@contoso.edu -IncludeLastMessagePreview -All
 
 `Get-TeamsChatByUser` uses Microsoft Graph `/users/{id}/chats`, supports pagination with `-All`, and can request `members` or `lastMessagePreview` expansions.
 
+Search the user directory directly before listing chats:
+
+```powershell
+Find-TeamsChatUser -SearchText 'Ava'
+```
+
+The command returns user ID, display name, UPN, first name, last name, mail address, and enabled state. It uses prefix matching for the supplied value across UPN, display name, first name, and last name, and requires at least three characters.
+
 Search for shared threads between two users:
 
 ```powershell
@@ -138,7 +148,7 @@ Use option 3 to select a row number from that list instead of copying a long cha
 
 ## Interactive inspection and deletion workflows
 
-Option 3 is single-chat inspection only. It collects a chat ID or row number and shows the cached inspection details when available. For pasted IDs, it checks the active chat endpoint first; if that returns not found and the current Graph context has deletion permission, it checks `GET /teamwork/deletedChats/{deletedChatId}` and reports `ChatStatus = Deleted`. It never asks for a deletion reason or deletion confirmation.
+Option 3 is single-chat inspection only. It collects a chat ID or row number, refreshes the thread details, and shows its creation time, members, last update, last-message preview, and message count. Message counts require a message-read permission and retrieve all accessible messages for that one chat, so they are intentionally not collected while listing chats. For pasted IDs, it checks the active chat endpoint first; if that returns not found and the current Graph context has deletion permission, it checks `GET /teamwork/deletedChats/{deletedChatId}` and reports `ChatStatus = Deleted`. Deleted chats and sessions without message-read permission leave the message count blank. It never asks for a deletion reason or deletion confirmation.
 
 Option 4 is multiple-chat inspection only. It can use pasted IDs, all rows from the last chat list, or a CSV file with a `ChatId` column. It de-duplicates targets, shows option-3-style details for cached chat IDs, and retrieves missing chat IDs directly from Microsoft Graph when permissions allow, including the deleted-chat fallback for not-found active chats. It never asks for a deletion reason or deletion confirmation.
 

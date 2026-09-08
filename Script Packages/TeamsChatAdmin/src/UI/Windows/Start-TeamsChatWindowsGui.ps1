@@ -229,8 +229,11 @@ function Start-TeamsChatWindowsGui {
             ('Status: {0}' -f $Chat.ChatStatus),
             ('Chat type: {0}' -f $Chat.ChatType),
             ('Participants: {0}' -f $Chat.ParticipantDetails),
+            ('Member count: {0}' -f $Chat.MemberCount),
             ('Topic: {0}' -f $Chat.Topic),
+            ('Created: {0}' -f $Chat.CreatedDateTime),
             ('Last updated: {0}' -f $Chat.LastUpdatedDateTime),
+            ('Message count: {0}' -f $Chat.MessageCount),
             ('Preview time: {0}' -f $Chat.LastMessagePreviewDateTime),
             ('Preview from: {0}' -f $Chat.LastMessagePreviewFrom),
             ('Preview text: {0}' -f $Chat.LastMessagePreviewText),
@@ -249,8 +252,11 @@ function Start-TeamsChatWindowsGui {
                 ChatType = $chat.ChatType
                 Participants = $chat.ParticipantDisplayNames
                 ParticipantDetails = $chat.ParticipantSummary
+                MemberCount = $chat.MemberCount
                 Topic = $chat.Topic
+                CreatedDateTime = $chat.CreatedDateTime
                 LastUpdatedDateTime = $chat.LastUpdatedDateTime
+                MessageCount = $chat.MessageCount
                 LastMessagePreviewDateTime = $chat.LastMessagePreviewDateTime
                 LastMessagePreviewFrom = $chat.LastMessagePreviewFrom
                 LastMessagePreviewText = $chat.LastMessagePreviewText
@@ -268,7 +274,7 @@ function Start-TeamsChatWindowsGui {
             return $cachedChat
         }
 
-        $directChat = Get-TeamsChatThread -ChatId $ChatId -IncludeMembers -IncludeLastMessagePreview
+        $directChat = Get-TeamsChatThread -ChatId $ChatId -IncludeMembers -IncludeLastMessagePreview -IncludeMessageCount
         return @(& $convertToIndexedChat @($directChat)) | Select-Object -First 1
     }
 
@@ -373,16 +379,17 @@ function Start-TeamsChatWindowsGui {
 
         $inputPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $inputPanel.Dock = 'Fill'
-        $inputPanel.ColumnCount = 4
+        $inputPanel.ColumnCount = 5
         $inputPanel.RowCount = 1
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 70)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
+        $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 100)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $layout.Controls.Add($inputPanel, 0, 0)
         $toolTip = [System.Windows.Forms.ToolTip]::new()
         $userLabel = [System.Windows.Forms.Label]@{ Text = 'User:'; Dock = 'Fill'; TextAlign = 'MiddleLeft' }
-        $toolTip.SetToolTip($userLabel, 'Enter a user ID or user principal name.')
+        $toolTip.SetToolTip($userLabel, 'Enter a user ID or UPN, or use Find user to search the directory.')
         $inputPanel.Controls.Add($userLabel, 0, 0)
         $userTextBox = [System.Windows.Forms.TextBox]::new()
         $userTextBox.Dock = 'Fill'
@@ -390,19 +397,25 @@ function Start-TeamsChatWindowsGui {
         $userTextBox.Text = [string]$SessionState.LastListUserId
         $toolTip.SetToolTip($userTextBox, 'User ID or UPN, for example user@contoso.edu or an Entra object ID.')
         $inputPanel.Controls.Add($userTextBox, 1, 0)
+        $findUserButton = [System.Windows.Forms.Button]::new()
+        $findUserButton.Text = 'Find user'
+        $findUserButton.Dock = 'Fill'
+        $findUserButton.Margin = [System.Windows.Forms.Padding]::new(4, 5, 4, 5)
+        $toolTip.SetToolTip($findUserButton, 'Search users by UPN, display name, first name, or last name. Minimum three characters.')
+        $inputPanel.Controls.Add($findUserButton, 2, 0)
         $allPagesCheckBox = [System.Windows.Forms.CheckBox]::new()
         $allPagesCheckBox.Text = 'All'
         $allPagesCheckBox.Dock = 'Fill'
         $allPagesCheckBox.Margin = [System.Windows.Forms.Padding]::new(4, 7, 4, 4)
         $allPagesCheckBox.Checked = [bool]$SessionState.LastListAllPages
         $toolTip.SetToolTip($allPagesCheckBox, 'Load all Graph result pages instead of only the first page.')
-        $inputPanel.Controls.Add($allPagesCheckBox, 2, 0)
+        $inputPanel.Controls.Add($allPagesCheckBox, 3, 0)
         $loadButton = [System.Windows.Forms.Button]::new()
         $loadButton.Text = 'Load'
         $loadButton.Dock = 'Fill'
         $loadButton.Margin = [System.Windows.Forms.Padding]::new(4, 5, 4, 5)
         $toolTip.SetToolTip($loadButton, 'Load chats for the entered user.')
-        $inputPanel.Controls.Add($loadButton, 3, 0)
+        $inputPanel.Controls.Add($loadButton, 4, 0)
 
         $grid = [System.Windows.Forms.DataGridView]::new()
         $grid.Dock = 'Fill'
@@ -444,7 +457,9 @@ function Start-TeamsChatWindowsGui {
                     ('Status: {0}' -f $selectedChat.ChatStatus),
                     ('Chat type: {0}' -f $selectedChat.ChatType),
                     ('Participants: {0}' -f $selectedChat.ParticipantDetails),
+                    ('Member count: {0}' -f $selectedChat.MemberCount),
                     ('Topic: {0}' -f $selectedChat.Topic),
+                    ('Created: {0}' -f $selectedChat.CreatedDateTime),
                     ('Last updated: {0}' -f $selectedChat.LastUpdatedDateTime),
                     ('Preview time: {0}' -f $selectedChat.LastMessagePreviewDateTime),
                     ('Preview from: {0}' -f $selectedChat.LastMessagePreviewFrom),
@@ -457,6 +472,18 @@ function Start-TeamsChatWindowsGui {
                 $guiState.LastInspectionInput = $selectedChat.ChatId
                 $guiState.LastInspectionText = $detailsBox.Text
             }
+        }.GetNewClosure())
+
+        $findUserButton.Add_Click({
+            param($sender, $eventArgs)
+
+            $selectedUser = Show-TeamsChatUserSearchDialog -Owner $sender.FindForm()
+            if ($null -eq $selectedUser) {
+                return
+            }
+
+            $userTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$selectedUser.UserPrincipalName)) { [string]$selectedUser.UserPrincipalName } else { [string]$selectedUser.Id }
+            $detailsBox.Text = 'Selected user: {0} ({1})' -f $selectedUser.DisplayName, $userTextBox.Text
         }.GetNewClosure())
 
         $loadButton.Add_Click({
@@ -622,23 +649,26 @@ function Start-TeamsChatWindowsGui {
                 }
                 else {
                     $chat = $guiState.LastChatResults | Where-Object { $_.ChatId -eq $chatInput } | Select-Object -First 1
-                    if (-not $chat) {
-                        $directChat = Get-TeamsChatThread -ChatId $chatInput -IncludeMembers -IncludeLastMessagePreview
-                        $chat = [pscustomobject]@{
-                            Index = $null
-                            ChatStatus = $directChat.ChatStatus
-                            ChatType = $directChat.ChatType
-                            Participants = $directChat.ParticipantDisplayNames
-                            ParticipantDetails = $directChat.ParticipantSummary
-                            Topic = $directChat.Topic
-                            LastUpdatedDateTime = $directChat.LastUpdatedDateTime
-                            LastMessagePreviewDateTime = $directChat.LastMessagePreviewDateTime
-                            LastMessagePreviewFrom = $directChat.LastMessagePreviewFrom
-                            LastMessagePreviewText = $directChat.LastMessagePreviewText
-                            LastMessagePreviewSnippet = $directChat.LastMessagePreviewSnippet
-                            ChatId = $directChat.ChatId
-                        }
-                    }
+                }
+                $chatIndex = if ($chat) { $chat.Index } else { $null }
+                $chatId = if ($chat) { $chat.ChatId } else { $chatInput }
+                $directChat = Get-TeamsChatThread -ChatId $chatId -IncludeMembers -IncludeLastMessagePreview -IncludeMessageCount
+                $chat = [pscustomobject]@{
+                    Index = $chatIndex
+                    ChatStatus = $directChat.ChatStatus
+                    ChatType = $directChat.ChatType
+                    Participants = $directChat.ParticipantDisplayNames
+                    ParticipantDetails = $directChat.ParticipantSummary
+                    MemberCount = $directChat.MemberCount
+                    Topic = $directChat.Topic
+                    CreatedDateTime = $directChat.CreatedDateTime
+                    LastUpdatedDateTime = $directChat.LastUpdatedDateTime
+                    MessageCount = $directChat.MessageCount
+                    LastMessagePreviewDateTime = $directChat.LastMessagePreviewDateTime
+                    LastMessagePreviewFrom = $directChat.LastMessagePreviewFrom
+                    LastMessagePreviewText = $directChat.LastMessagePreviewText
+                    LastMessagePreviewSnippet = $directChat.LastMessagePreviewSnippet
+                    ChatId = $directChat.ChatId
                 }
                 if ($chat) {
                     $detailsBox.Text = (@(
@@ -646,8 +676,11 @@ function Start-TeamsChatWindowsGui {
                         ('Status: {0}' -f $chat.ChatStatus),
                         ('Chat type: {0}' -f $chat.ChatType),
                         ('Participants: {0}' -f $chat.ParticipantDetails),
+                        ('Member count: {0}' -f $chat.MemberCount),
                         ('Topic: {0}' -f $chat.Topic),
+                        ('Created: {0}' -f $chat.CreatedDateTime),
                         ('Last updated: {0}' -f $chat.LastUpdatedDateTime),
+                        ('Message count: {0}' -f $chat.MessageCount),
                         ('Preview time: {0}' -f $chat.LastMessagePreviewDateTime),
                         ('Preview from: {0}' -f $chat.LastMessagePreviewFrom),
                         ('Preview text: {0}' -f $chat.LastMessagePreviewText),

@@ -11,6 +11,7 @@ function Show-TeamsChatAdminMenu {
     Write-Host ('Graph connected: {0} | Read reports: {1} | Deletion permission: {2} | Deletion mode: {3}' -f $SessionState.CapabilityState.Connected, $SessionState.CapabilityState.SupportsReadReports, $SessionState.CapabilityState.HasDeletionPermission, $SessionState.AllowDestructiveActions)
     Write-Host ''
     Write-Host '1. Status and capability details'
+    Write-Host 'U. Find a user by UPN or name'
     Write-Host '2. List chats for a user, then select a row'
     Write-Host '3. Inspect one chat'
     Write-Host '4. Inspect multiple chats'

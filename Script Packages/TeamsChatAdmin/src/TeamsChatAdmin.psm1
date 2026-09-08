@@ -27,6 +27,8 @@ Export-ModuleMember -Function @(
     'Get-TeamsChatBetweenUsers',
     'Get-TeamsChatByUser',
     'Get-TeamsChatThread',
+    'Find-TeamsChatUser',
+    'Show-TeamsChatUserSearchDialog',
     'Get-TeamsChatDeletePlan',
     'Get-TeamsChatCapabilityProfile',
     'Get-TeamsChatCapabilityMatrix',

@@ -31,6 +31,7 @@ function Start-TeamsChatAdmin {
         AuditPath = $AuditPath
         CapabilityState = $capabilityState
         LastChatResults = @()
+        LastListUserId = ''
     }
     $module = Get-Module -Name 'TeamsChatAdmin' | Select-Object -First 1
     $moduleVersion = $module.Version
