@@ -10,7 +10,10 @@ function Get-TeamsChatThread {
         [switch]$IncludeMembers,
 
         [Parameter()]
-        [switch]$IncludeLastMessagePreview
+        [switch]$IncludeLastMessagePreview,
+
+        [Parameter()]
+        [switch]$IncludeMessageCount
     )
 
     $capabilityState = Get-TeamsChatCapabilityProfile
@@ -50,7 +53,24 @@ function Get-TeamsChatThread {
     }
 
     $lastMessagePreview = Get-TeamsChatObjectValue -InputObject $chat -Name 'lastMessagePreview'
-    if ($IncludeLastMessagePreview -and $null -eq $lastMessagePreview -and $capabilityState.SupportsMessageRead) {
+    $messageCount = $null
+    if ($IncludeMessageCount -and -not $isDeletedChat -and $capabilityState.SupportsMessageRead) {
+        try {
+            $messages = @(Invoke-TeamsChatGraphCollectionRequest -Uri ('https://graph.microsoft.com/v1.0/chats/{0}/messages' -f $escapedChatId) -All)
+            $messageCount = $messages.Count
+            if ($IncludeLastMessagePreview -and $null -eq $lastMessagePreview -and $messages.Count -gt 0) {
+                $lastMessagePreview = $messages | Select-Object -First 1
+            }
+        }
+        catch {
+            if (Test-TeamsChatGraphAuthenticationError -ErrorRecord $_) {
+                throw
+            }
+
+            Write-Warning ('Unable to retrieve a message preview for chat {0}: {1}' -f $ChatId, $_.Exception.Message)
+        }
+    }
+    elseif ($IncludeLastMessagePreview -and $null -eq $lastMessagePreview -and $capabilityState.SupportsMessageRead) {
         try {
             $messages = @(Invoke-TeamsChatGraphCollectionRequest -Uri ('https://graph.microsoft.com/v1.0/chats/{0}/messages?$top=1' -f $escapedChatId))
             if ($messages.Count -gt 0) {
@@ -76,6 +96,7 @@ function Get-TeamsChatThread {
         isHiddenForAllMembers = Get-TeamsChatObjectValue -InputObject $chat -Name 'isHiddenForAllMembers'
         chatStatus = if ($isDeletedChat) { 'Deleted' } else { 'Active' }
         members = $members
+        messageCount = $messageCount
         lastMessagePreview = $lastMessagePreview
     } | ConvertTo-TeamsChatRecord
 }

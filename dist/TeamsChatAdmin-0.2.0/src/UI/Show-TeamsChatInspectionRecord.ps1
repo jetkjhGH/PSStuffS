@@ -11,8 +11,11 @@ function Show-TeamsChatInspectionRecord {
             ChatStatus = $Chat.ChatStatus
             ChatType = $Chat.ChatType
             ParticipantDetails = $Chat.ParticipantDetails
+            MemberCount = $Chat.MemberCount
             Topic = $Chat.Topic
+            CreatedDateTime = $Chat.CreatedDateTime
             LastUpdatedDateTime = $Chat.LastUpdatedDateTime
+            MessageCount = $Chat.MessageCount
             LastMessagePreviewDateTime = $Chat.LastMessagePreviewDateTime
             LastMessagePreviewFrom = $Chat.LastMessagePreviewFrom
             LastMessagePreviewText = $Chat.LastMessagePreviewText

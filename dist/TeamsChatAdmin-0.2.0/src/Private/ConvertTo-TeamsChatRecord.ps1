@@ -71,6 +71,7 @@ function ConvertTo-TeamsChatRecord {
             LastMessagePreviewText = $lastMessagePreviewText
             LastMessagePreviewSnippet = Format-TeamsChatTextSnippet -Text $lastMessagePreviewText
             MemberCount = if ($members.Count -gt 0) { $members.Count } else { $null }
+            MessageCount = Get-TeamsChatObjectValue -InputObject $Chat -Name 'messageCount'
             ParticipantSummary = if ($memberLabels.Count -gt 0) { $memberLabels -join '; ' } else { $null }
             ParticipantDisplayNames = if ($memberDisplayNames.Count -gt 0) { $memberDisplayNames -join ', ' } else { $null }
             Members = $members

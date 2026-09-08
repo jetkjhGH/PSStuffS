@@ -16,6 +16,7 @@ function Invoke-TeamsChatAdminInteractive {
             AuditPath = (Join-Path -Path $env:TEMP -ChildPath 'EDU Scripts\TeamsChatAdmin\TeamsChatAdminAudit.csv')
             CapabilityState = Get-TeamsChatCapabilityProfile
             LastChatResults = @()
+            LastListUserId = ''
         }
     }
 
@@ -39,13 +40,57 @@ function Invoke-TeamsChatAdminInteractive {
         }
 
         switch ($selection.ToUpperInvariant()) {
+            'U' {
+                $searchText = Read-Host 'Search UPN, display name, first name, or last name (minimum 3 characters)'
+                if ([string]::IsNullOrWhiteSpace($searchText)) {
+                    continue
+                }
+
+                try {
+                    $users = @(Find-TeamsChatUser -SearchText $searchText)
+                }
+                catch {
+                    Write-Warning $_.Exception.Message
+                    continue
+                }
+
+                if ($users.Count -eq 0) {
+                    Write-Warning 'No matching users were found.'
+                    continue
+                }
+
+                $indexedUsers = for ($index = 0; $index -lt $users.Count; $index++) {
+                    [pscustomobject]@{
+                        Index = $index + 1
+                        DisplayName = $users[$index].DisplayName
+                        UserPrincipalName = $users[$index].UserPrincipalName
+                        GivenName = $users[$index].GivenName
+                        Surname = $users[$index].Surname
+                        Id = $users[$index].Id
+                    }
+                }
+                $indexedUsers | Format-Table Index, DisplayName, UserPrincipalName, GivenName, Surname, Id -AutoSize
+                $selectedIndex = Read-Host 'Select a user number to use for List Chats, or press Enter to return'
+                if ($selectedIndex -notmatch '^\d+$' -or [int]$selectedIndex -lt 1 -or [int]$selectedIndex -gt $indexedUsers.Count) {
+                    continue
+                }
+
+                $selectedUser = $indexedUsers[[int]$selectedIndex - 1]
+                $SessionState.LastListUserId = if (-not [string]::IsNullOrWhiteSpace([string]$selectedUser.UserPrincipalName)) { $selectedUser.UserPrincipalName } else { $selectedUser.Id }
+                Write-Host ('Selected {0} ({1}). Choose option 2 to load chats.' -f $selectedUser.DisplayName, $SessionState.LastListUserId) -ForegroundColor Cyan
+            }
             '1' {
                 $SessionState.CapabilityState | Select-Object AuthType, Connected, Account, TenantId, ClientId, GraphSdkAvailable, GraphRequestAvailable, SupportsReadReports, SupportsMessageRead, HasDeletionPermission, DeletionSessionEnabled, SupportsSingleChatDeletion, SupportsBulkChatDeletion, SupportsDeletedChatRestore, Warning | Format-List
                 Write-Host 'Capability matrix:' -ForegroundColor Cyan
                 Get-TeamsChatCapabilityMatrix | Select-Object Feature, Method, DestructiveOperation, ConfirmationRequirement | Format-Table -AutoSize
             }
             '2' {
-                $userId = Read-Host 'User ID or UPN'
+                $prompt = if ([string]::IsNullOrWhiteSpace([string]$SessionState.LastListUserId)) { 'User ID or UPN' } else { 'User ID or UPN (press Enter to use {0})' -f $SessionState.LastListUserId }
+                $userId = Read-Host $prompt
+                if ([string]::IsNullOrWhiteSpace($userId)) {
+                    $userId = [string]$SessionState.LastListUserId
+                }
+                $SessionState.LastListUserId = $userId
                 if (-not [string]::IsNullOrWhiteSpace($userId)) {
                     $allRows = Read-Host 'Load all pages? Type Y for all pages, or press Enter for the first page'
                     try {
@@ -126,17 +171,20 @@ function Invoke-TeamsChatAdminInteractive {
                     $selectedChat = $SessionState.LastChatResults | Where-Object { $_.ChatId -eq $chatId } | Select-Object -First 1
                 }
 
-                if (-not $selectedChat -and -not [string]::IsNullOrWhiteSpace($chatId)) {
+                if (-not [string]::IsNullOrWhiteSpace($chatId)) {
                     try {
-                        $directChat = Get-TeamsChatThread -ChatId $chatId -IncludeMembers -IncludeLastMessagePreview
+                        $directChat = Get-TeamsChatThread -ChatId $chatId -IncludeMembers -IncludeLastMessagePreview -IncludeMessageCount
                         $selectedChat = [pscustomobject]@{
-                            Index = $null
+                            Index = if ($selectedChat) { $selectedChat.Index } else { $null }
                             ChatStatus = $directChat.ChatStatus
                             ChatType = $directChat.ChatType
                             Participants = $directChat.ParticipantDisplayNames
                             ParticipantDetails = $directChat.ParticipantSummary
+                            MemberCount = $directChat.MemberCount
                             Topic = $directChat.Topic
+                            CreatedDateTime = $directChat.CreatedDateTime
                             LastUpdatedDateTime = $directChat.LastUpdatedDateTime
+                            MessageCount = $directChat.MessageCount
                             LastMessagePreviewDateTime = $directChat.LastMessagePreviewDateTime
                             LastMessagePreviewFrom = $directChat.LastMessagePreviewFrom
                             LastMessagePreviewText = $directChat.LastMessagePreviewText

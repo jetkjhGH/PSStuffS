@@ -18,7 +18,7 @@ function Read-TeamsChatWindowsConfirmation {
     $dialog.FormBorderStyle = 'FixedDialog'
     $dialog.MaximizeBox = $false
     $dialog.MinimizeBox = $false
-    $dialog.ClientSize = [System.Drawing.Size]::new(760, 190)
+    $dialog.ClientSize = [System.Drawing.Size]::new(1280, 178)
     $dialog.Padding = [System.Windows.Forms.Padding]::new(16)
 
     $layout = [System.Windows.Forms.TableLayoutPanel]::new()
@@ -26,7 +26,7 @@ function Read-TeamsChatWindowsConfirmation {
     $layout.ColumnCount = 1
     $layout.RowCount = 4
     $layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 34)) | Out-Null
-    $layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 54)) | Out-Null
+    $layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 38)) | Out-Null
     $layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 38)) | Out-Null
     $layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
     $dialog.Controls.Add($layout)
@@ -40,9 +40,7 @@ function Read-TeamsChatWindowsConfirmation {
 
     $expectedBox = [System.Windows.Forms.TextBox]::new()
     $expectedBox.Dock = 'Fill'
-    $expectedBox.Multiline = $true
     $expectedBox.ReadOnly = $true
-    $expectedBox.ScrollBars = 'Horizontal'
     $expectedBox.Font = [System.Drawing.Font]::new('Consolas', 9)
     $expectedBox.Text = $ExpectedValue
     $layout.Controls.Add($expectedBox, 0, 1)
@@ -231,8 +229,11 @@ function Start-TeamsChatWindowsGui {
             ('Status: {0}' -f $Chat.ChatStatus),
             ('Chat type: {0}' -f $Chat.ChatType),
             ('Participants: {0}' -f $Chat.ParticipantDetails),
+            ('Member count: {0}' -f $Chat.MemberCount),
             ('Topic: {0}' -f $Chat.Topic),
+            ('Created: {0}' -f $Chat.CreatedDateTime),
             ('Last updated: {0}' -f $Chat.LastUpdatedDateTime),
+            ('Message count: {0}' -f $Chat.MessageCount),
             ('Preview time: {0}' -f $Chat.LastMessagePreviewDateTime),
             ('Preview from: {0}' -f $Chat.LastMessagePreviewFrom),
             ('Preview text: {0}' -f $Chat.LastMessagePreviewText),
@@ -251,8 +252,11 @@ function Start-TeamsChatWindowsGui {
                 ChatType = $chat.ChatType
                 Participants = $chat.ParticipantDisplayNames
                 ParticipantDetails = $chat.ParticipantSummary
+                MemberCount = $chat.MemberCount
                 Topic = $chat.Topic
+                CreatedDateTime = $chat.CreatedDateTime
                 LastUpdatedDateTime = $chat.LastUpdatedDateTime
+                MessageCount = $chat.MessageCount
                 LastMessagePreviewDateTime = $chat.LastMessagePreviewDateTime
                 LastMessagePreviewFrom = $chat.LastMessagePreviewFrom
                 LastMessagePreviewText = $chat.LastMessagePreviewText
@@ -270,7 +274,7 @@ function Start-TeamsChatWindowsGui {
             return $cachedChat
         }
 
-        $directChat = Get-TeamsChatThread -ChatId $ChatId -IncludeMembers -IncludeLastMessagePreview
+        $directChat = Get-TeamsChatThread -ChatId $ChatId -IncludeMembers -IncludeLastMessagePreview -IncludeMessageCount
         return @(& $convertToIndexedChat @($directChat)) | Select-Object -First 1
     }
 
@@ -306,9 +310,10 @@ function Start-TeamsChatWindowsGui {
 
         $refreshButton = [System.Windows.Forms.Button]::new()
         $refreshButton.Text = 'Refresh Status'
-        $refreshButton.Width = 155
-        $refreshButton.Height = 38
-        $refreshButton.AutoEllipsis = $true
+        $refreshButton.AutoSize = $true
+        $refreshButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $refreshButton.MinimumSize = [System.Drawing.Size]::new(155, 38)
+        $refreshButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $refreshButton.Add_Click({
             param($sender, $eventArgs)
 
@@ -332,9 +337,10 @@ function Start-TeamsChatWindowsGui {
 
         $deletionButton = [System.Windows.Forms.Button]::new()
         $deletionButton.Text = if ($SessionState.AllowDestructiveActions) { 'Disable Deletion Mode' } else { 'Enable Deletion Mode' }
-        $deletionButton.Width = 220
-        $deletionButton.Height = 38
-        $deletionButton.AutoEllipsis = $true
+        $deletionButton.AutoSize = $true
+        $deletionButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $deletionButton.MinimumSize = [System.Drawing.Size]::new(220, 38)
+        $deletionButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $deletionButton.Enabled = [bool]$SessionState.CapabilityState.HasDeletionPermission
         $deletionButton.Add_Click({
             param($sender, $eventArgs)
@@ -373,16 +379,17 @@ function Start-TeamsChatWindowsGui {
 
         $inputPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $inputPanel.Dock = 'Fill'
-        $inputPanel.ColumnCount = 4
+        $inputPanel.ColumnCount = 5
         $inputPanel.RowCount = 1
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 70)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
+        $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 100)) | Out-Null
         $inputPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $layout.Controls.Add($inputPanel, 0, 0)
         $toolTip = [System.Windows.Forms.ToolTip]::new()
         $userLabel = [System.Windows.Forms.Label]@{ Text = 'User:'; Dock = 'Fill'; TextAlign = 'MiddleLeft' }
-        $toolTip.SetToolTip($userLabel, 'Enter a user ID or user principal name.')
+        $toolTip.SetToolTip($userLabel, 'Enter a user ID or UPN, or use Find user to search the directory.')
         $inputPanel.Controls.Add($userLabel, 0, 0)
         $userTextBox = [System.Windows.Forms.TextBox]::new()
         $userTextBox.Dock = 'Fill'
@@ -390,19 +397,25 @@ function Start-TeamsChatWindowsGui {
         $userTextBox.Text = [string]$SessionState.LastListUserId
         $toolTip.SetToolTip($userTextBox, 'User ID or UPN, for example user@contoso.edu or an Entra object ID.')
         $inputPanel.Controls.Add($userTextBox, 1, 0)
+        $findUserButton = [System.Windows.Forms.Button]::new()
+        $findUserButton.Text = 'Find user'
+        $findUserButton.Dock = 'Fill'
+        $findUserButton.Margin = [System.Windows.Forms.Padding]::new(4, 5, 4, 5)
+        $toolTip.SetToolTip($findUserButton, 'Search users by UPN, display name, first name, or last name. Minimum three characters.')
+        $inputPanel.Controls.Add($findUserButton, 2, 0)
         $allPagesCheckBox = [System.Windows.Forms.CheckBox]::new()
         $allPagesCheckBox.Text = 'All'
         $allPagesCheckBox.Dock = 'Fill'
         $allPagesCheckBox.Margin = [System.Windows.Forms.Padding]::new(4, 7, 4, 4)
         $allPagesCheckBox.Checked = [bool]$SessionState.LastListAllPages
         $toolTip.SetToolTip($allPagesCheckBox, 'Load all Graph result pages instead of only the first page.')
-        $inputPanel.Controls.Add($allPagesCheckBox, 2, 0)
+        $inputPanel.Controls.Add($allPagesCheckBox, 3, 0)
         $loadButton = [System.Windows.Forms.Button]::new()
         $loadButton.Text = 'Load'
         $loadButton.Dock = 'Fill'
         $loadButton.Margin = [System.Windows.Forms.Padding]::new(4, 5, 4, 5)
         $toolTip.SetToolTip($loadButton, 'Load chats for the entered user.')
-        $inputPanel.Controls.Add($loadButton, 3, 0)
+        $inputPanel.Controls.Add($loadButton, 4, 0)
 
         $grid = [System.Windows.Forms.DataGridView]::new()
         $grid.Dock = 'Fill'
@@ -444,7 +457,9 @@ function Start-TeamsChatWindowsGui {
                     ('Status: {0}' -f $selectedChat.ChatStatus),
                     ('Chat type: {0}' -f $selectedChat.ChatType),
                     ('Participants: {0}' -f $selectedChat.ParticipantDetails),
+                    ('Member count: {0}' -f $selectedChat.MemberCount),
                     ('Topic: {0}' -f $selectedChat.Topic),
+                    ('Created: {0}' -f $selectedChat.CreatedDateTime),
                     ('Last updated: {0}' -f $selectedChat.LastUpdatedDateTime),
                     ('Preview time: {0}' -f $selectedChat.LastMessagePreviewDateTime),
                     ('Preview from: {0}' -f $selectedChat.LastMessagePreviewFrom),
@@ -457,6 +472,18 @@ function Start-TeamsChatWindowsGui {
                 $guiState.LastInspectionInput = $selectedChat.ChatId
                 $guiState.LastInspectionText = $detailsBox.Text
             }
+        }.GetNewClosure())
+
+        $findUserButton.Add_Click({
+            param($sender, $eventArgs)
+
+            $selectedUser = Show-TeamsChatUserSearchDialog -Owner $sender.FindForm()
+            if ($null -eq $selectedUser) {
+                return
+            }
+
+            $userTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$selectedUser.UserPrincipalName)) { [string]$selectedUser.UserPrincipalName } else { [string]$selectedUser.Id }
+            $detailsBox.Text = 'Selected user: {0} ({1})' -f $selectedUser.DisplayName, $userTextBox.Text
         }.GetNewClosure())
 
         $loadButton.Add_Click({
@@ -622,23 +649,26 @@ function Start-TeamsChatWindowsGui {
                 }
                 else {
                     $chat = $guiState.LastChatResults | Where-Object { $_.ChatId -eq $chatInput } | Select-Object -First 1
-                    if (-not $chat) {
-                        $directChat = Get-TeamsChatThread -ChatId $chatInput -IncludeMembers -IncludeLastMessagePreview
-                        $chat = [pscustomobject]@{
-                            Index = $null
-                            ChatStatus = $directChat.ChatStatus
-                            ChatType = $directChat.ChatType
-                            Participants = $directChat.ParticipantDisplayNames
-                            ParticipantDetails = $directChat.ParticipantSummary
-                            Topic = $directChat.Topic
-                            LastUpdatedDateTime = $directChat.LastUpdatedDateTime
-                            LastMessagePreviewDateTime = $directChat.LastMessagePreviewDateTime
-                            LastMessagePreviewFrom = $directChat.LastMessagePreviewFrom
-                            LastMessagePreviewText = $directChat.LastMessagePreviewText
-                            LastMessagePreviewSnippet = $directChat.LastMessagePreviewSnippet
-                            ChatId = $directChat.ChatId
-                        }
-                    }
+                }
+                $chatIndex = if ($chat) { $chat.Index } else { $null }
+                $chatId = if ($chat) { $chat.ChatId } else { $chatInput }
+                $directChat = Get-TeamsChatThread -ChatId $chatId -IncludeMembers -IncludeLastMessagePreview -IncludeMessageCount
+                $chat = [pscustomobject]@{
+                    Index = $chatIndex
+                    ChatStatus = $directChat.ChatStatus
+                    ChatType = $directChat.ChatType
+                    Participants = $directChat.ParticipantDisplayNames
+                    ParticipantDetails = $directChat.ParticipantSummary
+                    MemberCount = $directChat.MemberCount
+                    Topic = $directChat.Topic
+                    CreatedDateTime = $directChat.CreatedDateTime
+                    LastUpdatedDateTime = $directChat.LastUpdatedDateTime
+                    MessageCount = $directChat.MessageCount
+                    LastMessagePreviewDateTime = $directChat.LastMessagePreviewDateTime
+                    LastMessagePreviewFrom = $directChat.LastMessagePreviewFrom
+                    LastMessagePreviewText = $directChat.LastMessagePreviewText
+                    LastMessagePreviewSnippet = $directChat.LastMessagePreviewSnippet
+                    ChatId = $directChat.ChatId
                 }
                 if ($chat) {
                     $detailsBox.Text = (@(
@@ -646,8 +676,11 @@ function Start-TeamsChatWindowsGui {
                         ('Status: {0}' -f $chat.ChatStatus),
                         ('Chat type: {0}' -f $chat.ChatType),
                         ('Participants: {0}' -f $chat.ParticipantDetails),
+                        ('Member count: {0}' -f $chat.MemberCount),
                         ('Topic: {0}' -f $chat.Topic),
+                        ('Created: {0}' -f $chat.CreatedDateTime),
                         ('Last updated: {0}' -f $chat.LastUpdatedDateTime),
+                        ('Message count: {0}' -f $chat.MessageCount),
                         ('Preview time: {0}' -f $chat.LastMessagePreviewDateTime),
                         ('Preview from: {0}' -f $chat.LastMessagePreviewFrom),
                         ('Preview text: {0}' -f $chat.LastMessagePreviewText),
@@ -697,21 +730,24 @@ function Start-TeamsChatWindowsGui {
         $leftLayout.Controls.Add($buttonPanel, 0, 2)
         $useLastButton = [System.Windows.Forms.Button]::new()
         $useLastButton.Text = 'Use Last List'
-        $useLastButton.Width = 125
-        $useLastButton.Height = 34
-        $useLastButton.AutoEllipsis = $true
+        $useLastButton.AutoSize = $true
+        $useLastButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $useLastButton.MinimumSize = [System.Drawing.Size]::new(125, 34)
+        $useLastButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($useLastButton)
         $loadCsvButton = [System.Windows.Forms.Button]::new()
         $loadCsvButton.Text = 'Load CSV'
-        $loadCsvButton.Width = 110
-        $loadCsvButton.Height = 34
-        $loadCsvButton.AutoEllipsis = $true
+        $loadCsvButton.AutoSize = $true
+        $loadCsvButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $loadCsvButton.MinimumSize = [System.Drawing.Size]::new(110, 34)
+        $loadCsvButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($loadCsvButton)
         $inspectButton = [System.Windows.Forms.Button]::new()
         $inspectButton.Text = 'Inspect'
-        $inspectButton.Width = 100
-        $inspectButton.Height = 34
-        $inspectButton.AutoEllipsis = $true
+        $inspectButton.AutoSize = $true
+        $inspectButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $inspectButton.MinimumSize = [System.Drawing.Size]::new(100, 34)
+        $inspectButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($inspectButton)
 
         $detailsBox = [System.Windows.Forms.TextBox]::new()
@@ -843,7 +879,7 @@ function Start-TeamsChatWindowsGui {
         $idPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $idPanel.Dock = 'Fill'
         $idPanel.ColumnCount = 3
-        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 90)) | Out-Null
+        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 140)) | Out-Null
         $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
         $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $layout.Controls.Add($idPanel, 0, 0)
@@ -861,9 +897,10 @@ function Start-TeamsChatWindowsGui {
 
         $reasonPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $reasonPanel.Dock = 'Fill'
-        $reasonPanel.ColumnCount = 2
-        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 90)) | Out-Null
+        $reasonPanel.ColumnCount = 3
+        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 140)) | Out-Null
         $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
+        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 120)) | Out-Null
         $layout.Controls.Add($reasonPanel, 0, 1)
         $reasonPanel.Controls.Add([System.Windows.Forms.Label]@{ Text = 'Reason:'; Dock = 'Fill'; TextAlign = 'MiddleLeft' }, 0, 0)
         $reasonTextBox = [System.Windows.Forms.TextBox]::new()
@@ -877,15 +914,17 @@ function Start-TeamsChatWindowsGui {
         $layout.Controls.Add($buttonPanel, 0, 2)
         $previewButton = [System.Windows.Forms.Button]::new()
         $previewButton.Text = 'Preview Delete'
-        $previewButton.Width = 155
-        $previewButton.Height = 36
-        $previewButton.AutoEllipsis = $true
+        $previewButton.AutoSize = $true
+        $previewButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $previewButton.MinimumSize = [System.Drawing.Size]::new(155, 36)
+        $previewButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($previewButton)
         $deleteButton = [System.Windows.Forms.Button]::new()
         $deleteButton.Text = 'Delete'
-        $deleteButton.Width = 120
-        $deleteButton.Height = 36
-        $deleteButton.AutoEllipsis = $true
+        $deleteButton.AutoSize = $true
+        $deleteButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $deleteButton.MinimumSize = [System.Drawing.Size]::new(120, 36)
+        $deleteButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($deleteButton)
 
         $outputBox = [System.Windows.Forms.TextBox]::new()
@@ -940,7 +979,10 @@ function Start-TeamsChatWindowsGui {
                 [System.Windows.Forms.MessageBox]::Show('Deletion requires deletion permission and deletion workflows enabled for this session.', 'Teams Chat Admin', 'OK', 'Warning') | Out-Null
                 return
             }
-            $confirmation = Read-TeamsChatWindowsConfirmation -Title 'Confirm Delete' -Instruction 'Type the exact chat ID to confirm deletion:' -ExpectedValue $chatId
+            $confirmation = & (Get-Module -Name TeamsChatAdmin) {
+                param($title, $instruction, $expectedValue)
+                Read-TeamsChatWindowsConfirmation -Title $title -Instruction $instruction -ExpectedValue $expectedValue
+            } 'Confirm Delete' 'Type the exact chat ID to confirm deletion:' $chatId
             if ($confirmation -ne $chatId) {
                 $outputBox.Text = 'Deletion cancelled. Typed confirmation did not match the chat ID.'
                 $guiState.LastDeleteOutput = $outputBox.Text
@@ -986,9 +1028,9 @@ function Start-TeamsChatWindowsGui {
         $idPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $idPanel.Dock = 'Fill'
         $idPanel.ColumnCount = 3
-        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 110)) | Out-Null
+        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 140)) | Out-Null
         $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
-        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 170)) | Out-Null
+        $idPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 240)) | Out-Null
         $layout.Controls.Add($idPanel, 0, 1)
         $idPanel.Controls.Add([System.Windows.Forms.Label]@{ Text = 'Deleted chat ID:'; Dock = 'Fill'; TextAlign = 'MiddleLeft' }, 0, 0)
         $deletedChatTextBox = [System.Windows.Forms.TextBox]::new()
@@ -1000,14 +1042,14 @@ function Start-TeamsChatWindowsGui {
         $refreshButton.Text = 'Refresh Candidates'
         $refreshButton.Dock = 'Fill'
         $refreshButton.Margin = [System.Windows.Forms.Padding]::new(4, 5, 4, 5)
-        $refreshButton.AutoEllipsis = $true
         $idPanel.Controls.Add($refreshButton, 2, 0)
 
         $reasonPanel = [System.Windows.Forms.TableLayoutPanel]::new()
         $reasonPanel.Dock = 'Fill'
-        $reasonPanel.ColumnCount = 2
-        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 110)) | Out-Null
+        $reasonPanel.ColumnCount = 3
+        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 140)) | Out-Null
         $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent, 100)) | Out-Null
+        $reasonPanel.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute, 240)) | Out-Null
         $layout.Controls.Add($reasonPanel, 0, 2)
         $reasonPanel.Controls.Add([System.Windows.Forms.Label]@{ Text = 'Reason:'; Dock = 'Fill'; TextAlign = 'MiddleLeft' }, 0, 0)
         $reasonTextBox = [System.Windows.Forms.TextBox]::new()
@@ -1021,15 +1063,17 @@ function Start-TeamsChatWindowsGui {
         $layout.Controls.Add($buttonPanel, 0, 3)
         $previewButton = [System.Windows.Forms.Button]::new()
         $previewButton.Text = 'Preview Restore'
-        $previewButton.Width = 165
-        $previewButton.Height = 36
-        $previewButton.AutoEllipsis = $true
+        $previewButton.AutoSize = $true
+        $previewButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $previewButton.MinimumSize = [System.Drawing.Size]::new(165, 36)
+        $previewButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($previewButton)
         $restoreButton = [System.Windows.Forms.Button]::new()
         $restoreButton.Text = 'Restore'
-        $restoreButton.Width = 120
-        $restoreButton.Height = 36
-        $restoreButton.AutoEllipsis = $true
+        $restoreButton.AutoSize = $true
+        $restoreButton.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
+        $restoreButton.MinimumSize = [System.Drawing.Size]::new(120, 36)
+        $restoreButton.Padding = [System.Windows.Forms.Padding]::new(8, 0, 8, 0)
         $buttonPanel.Controls.Add($restoreButton)
 
         $outputBox = [System.Windows.Forms.TextBox]::new()
@@ -1120,7 +1164,10 @@ function Start-TeamsChatWindowsGui {
                 [System.Windows.Forms.MessageBox]::Show('Restore requires deletion permission and deletion/restore workflows enabled for this session.', 'Teams Chat Admin', 'OK', 'Warning') | Out-Null
                 return
             }
-            $confirmation = Read-TeamsChatWindowsConfirmation -Title 'Confirm Restore' -Instruction 'Type the exact deleted chat ID to confirm restore:' -ExpectedValue $deletedChatId
+            $confirmation = & (Get-Module -Name TeamsChatAdmin) {
+                param($title, $instruction, $expectedValue)
+                Read-TeamsChatWindowsConfirmation -Title $title -Instruction $instruction -ExpectedValue $expectedValue
+            } 'Confirm Restore' 'Type the exact deleted chat ID to confirm restore:' $deletedChatId
             if ($confirmation -ne $deletedChatId) {
                 $outputBox.Text = 'Restore cancelled. Typed confirmation did not match the deleted chat ID.'
                 $guiState.LastRestoreOutput = $outputBox.Text
