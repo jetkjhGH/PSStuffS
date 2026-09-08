@@ -1,4 +1,4 @@
-# Teams Chat Admin Distribution Runbook | [Download current ZIP](https://github.com/jetkjhGH/PSStuffS/blob/main/dist/TeamsChatAdmin-0.2.0.zip)
+# Teams Chat Admin Distribution Runbook | [Download current ZIP](https://raw.githubusercontent.com/jetkjhGH/PSStuffS/main/dist/TeamsChatAdmin-0.2.0.zip)
 
 This package contains the Teams Chat Admin PowerShell 7 tool for Microsoft Teams chat inspection, reporting, and guarded administrative actions through Microsoft Graph.
 
