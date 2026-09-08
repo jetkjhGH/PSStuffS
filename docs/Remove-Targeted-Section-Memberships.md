@@ -49,7 +49,7 @@ operator before removal.
 
 ```powershell
 Set-Location C:\PSSTuffS
-.\Remove-Targeted_Section_Memberships.ps1 -Path 'C:\Temp\SectionUsage.csv'
+& '.\Single Script Tools\Remove-Targeted_Section_Memberships.ps1' -Path 'C:\Temp\SectionUsage.csv'
 ```
 
 For the first test, supply a CSV containing one non-production group and verify its owner/member

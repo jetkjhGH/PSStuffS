@@ -37,7 +37,7 @@ the corresponding application permissions must be consented in Entra ID.
 Run the script from the repository folder:
 
 ```powershell
-.\GetGroupsBrokenSPO.ps1
+& '.\Single Script Tools\GetGroupsBrokenSPO.ps1'
 ```
 
 Enter an inclusive start and end date in `yyyy-MM-dd` form. Start with the narrowest useful range:
@@ -55,10 +55,10 @@ tenant-affecting request and is guarded carefully.
 
 | Mode | Command | Behavior |
 | --- | --- | --- |
-| Diagnostic with preview | `.\GetGroupsBrokenSPO.ps1 -WhatIf` | Finds and revalidates candidates, then writes `WhatIf` trigger rows without sending a Graph provisioning request. |
-| Interactive remediation | `.\GetGroupsBrokenSPO.ps1` | Prompts once when revalidated candidates exist. Enter `Y` to request provisioning or `N` to skip it. |
-| Per-group confirmation | `.\GetGroupsBrokenSPO.ps1 -Confirm` | Adds PowerShell confirmation for each individual request after the batch prompt. |
-| Explicit unattended approval | `.\GetGroupsBrokenSPO.ps1 -UnattendedProvisioning` | Bypasses the batch `Y/N` prompt only. It still uses `-Confirm` if specified and still performs current Exchange revalidation. |
+| Diagnostic with preview | `& '.\Single Script Tools\GetGroupsBrokenSPO.ps1' -WhatIf` | Finds and revalidates candidates, then writes `WhatIf` trigger rows without sending a Graph provisioning request. |
+| Interactive remediation | `& '.\Single Script Tools\GetGroupsBrokenSPO.ps1'` | Prompts once when revalidated candidates exist. Enter `Y` to request provisioning or `N` to skip it. |
+| Per-group confirmation | `& '.\Single Script Tools\GetGroupsBrokenSPO.ps1' -Confirm` | Adds PowerShell confirmation for each individual request after the batch prompt. |
+| Explicit unattended approval | `& '.\Single Script Tools\GetGroupsBrokenSPO.ps1' -UnattendedProvisioning` | Bypasses the batch `Y/N` prompt only. It still uses `-Confirm` if specified and still performs current Exchange revalidation. |
 
 Use `-WhatIf` with the same date range before unattended provisioning. `-UnattendedProvisioning`
 does not bypass the date prompts, connection checks, or revalidation. It should be used only after
@@ -155,7 +155,7 @@ transient failures.
 ## Safe Test Procedure
 
 1. Authenticate to a test tenant and confirm the tenant before entering the date range.
-2. Run `.\GetGroupsBrokenSPO.ps1 -WhatIf` for one known test group or a narrow date range.
+2. Run `& '.\Single Script Tools\GetGroupsBrokenSPO.ps1' -WhatIf` for one known test group or a narrow date range.
 3. Review all candidate, refresh-failure, and trigger-result rows.
 4. Run without `-WhatIf`, answer `Y`, and use `-Confirm` for the first live test.
 5. Re-run the diagnostic later to confirm that Graph and Exchange both show a site URL and ID.

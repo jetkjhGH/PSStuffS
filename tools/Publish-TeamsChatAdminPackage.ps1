@@ -33,10 +33,11 @@ function Test-TeamsChatAdminPackageScript {
 }
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path -Path $repositoryRoot -ChildPath 'src\TeamsChatAdmin.psd1'
-$correctedLauncherPath = Join-Path -Path $repositoryRoot -ChildPath 'ChatManagementInterface.ps1'
+$packageSourceRoot = Join-Path -Path $repositoryRoot -ChildPath 'Script Packages\TeamsChatAdmin'
+$manifestPath = Join-Path -Path $packageSourceRoot -ChildPath 'src\TeamsChatAdmin.psd1'
+$correctedLauncherPath = Join-Path -Path $packageSourceRoot -ChildPath 'ChatManagementInterface.ps1'
 $runbookPath = Join-Path -Path $repositoryRoot -ChildPath 'docs\TeamsChatAdmin-Distribution.md'
-$sourceRoot = Join-Path -Path $repositoryRoot -ChildPath 'src'
+$sourceRoot = Join-Path -Path $packageSourceRoot -ChildPath 'src'
 
 foreach ($requiredPath in @($manifestPath, $correctedLauncherPath, $runbookPath, $sourceRoot)) {
 	if (-not (Test-Path -LiteralPath $requiredPath)) {
@@ -47,7 +48,7 @@ foreach ($requiredPath in @($manifestPath, $correctedLauncherPath, $runbookPath,
 $manifestData = Import-PowerShellDataFile -Path $manifestPath
 $moduleVersion = [string]$manifestData.ModuleVersion
 if ([string]::IsNullOrWhiteSpace($moduleVersion)) {
-	throw 'Unable to read ModuleVersion from src\TeamsChatAdmin.psd1.'
+	throw 'Unable to read ModuleVersion from Script Packages\TeamsChatAdmin\src\TeamsChatAdmin.psd1.'
 }
 
 $packageFolderName = '{0}-{1}' -f $PackageName, $moduleVersion

@@ -6,8 +6,8 @@ This repository contains interactive PowerShell utilities for Microsoft 365 educ
 
 ## Working conventions
 
-- Treat `New-EducationClassTeams.ps1` as the maintained production batch-creation script. Preserve `CmdletBinding`, `SupportsShouldProcess`, `Set-StrictMode -Version Latest`, and `$ErrorActionPreference = 'Stop'`; retain a useful `-WhatIf` path for tenant-writing changes.
-- `Create Graph API Teams (Class Teams - SDS Options).ps1` is a legacy/example script. Do not use it as the template for production error handling or validation.
+- Treat `Single Script Tools\New-EducationClassTeams.ps1` as the maintained production batch-creation script. Preserve `CmdletBinding`, `SupportsShouldProcess`, `Set-StrictMode -Version Latest`, and `$ErrorActionPreference = 'Stop'`; retain a useful `-WhatIf` path for tenant-writing changes.
+- `legacy-tests\Create Graph API Teams (Class Teams - SDS Options).ps1` is a legacy/example script. Do not use it as the template for production error handling or validation.
 - Reporting scripts require an existing Microsoft Graph session and Exchange Online session. Creation scripts require an existing Graph session. Scripts validate connections but do not call `Connect-MgGraph` or `Connect-ExchangeOnline` themselves.
 - Keep module and scope checks actionable. Graph commands must remain compatible with the Microsoft Graph PowerShell SDK; reporting code using `Get-UnifiedGroup` depends on ExchangeOnlineManagement.
 - Preserve interactive validation loops and the established user-facing output style: `Write-Warning` for recoverable problems, `throw` for blocking prerequisites, and contextual `try`/`catch` around per-item remote operations when continuing is safe.
@@ -21,7 +21,7 @@ This repository contains interactive PowerShell utilities for Microsoft 365 educ
 
   ```powershell
   $errors = $null
-  [System.Management.Automation.Language.Parser]::ParseFile('.\New-EducationClassTeams.ps1', [ref] $null, [ref] $errors) | Out-Null
+  [System.Management.Automation.Language.Parser]::ParseFile('.\Single Script Tools\New-EducationClassTeams.ps1', [ref] $null, [ref] $errors) | Out-Null
   $errors
   ```
 

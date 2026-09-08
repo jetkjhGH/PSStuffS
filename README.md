@@ -3,18 +3,25 @@
 PowerShell utilities for Microsoft 365 education environments, including School Data Sync
 (SDS) diagnostics and Microsoft Graph-based class Team creation.
 
-## Scripts
+## Repository Layout
+
+- `Script Packages\TeamsChatAdmin\` contains the Teams Chat Admin launcher and its `src` module tree.
+- `Single Script Tools\` contains standalone PowerShell utilities.
+
+## Single Script Tools
 
 | Script | Purpose | Documentation |
 | --- | --- | --- |
-| `New-EducationClassTeams.ps1` | Interactively creates activated or non-activated `educationClass` Teams in batches. | [Read the guide](docs/New-EducationClassTeams.md) |
-| `Create Graph API Teams (Class Teams - SDS Options).ps1` | Legacy examples for creating one non-activated class Team and one activated class Team. | [Read the guide](docs/Create-Graph-API-Teams-Class-Teams-SDS-Options.md) |
-| `CheckforSDSProvFails.ps1` | Reports SDS class Teams without SharePoint sites and SDS groups that were not teamified. | [Read the guide](docs/CheckforSDSProvFails.md) |
-| `CheckSPOProv.ps1` | Earlier reporting script for SharePoint provisioning and non-teamified SDS groups. | [Read the guide](docs/CheckSPOProv.md) |
-| `GetGroupsBrokenSPO.ps1` | Diagnoses group/site divergence and can explicitly request site provisioning for revalidated missing-site candidates. | [Read the guide](docs/GetGroupsBrokenSPO.md) |
-| `IdentifyClassesNoChannelActiivity.ps1` | Reports General-channel user and system/service activity for selected class Teams. | [Read the guide](docs/IdentifyClassesNoChannelActiivity.md) |
-| `ChatManagementInterface.ps1` | Launches the PowerShell 7 Teams chat admin module for Graph-backed chat inspection, reporting, deletion previews, and guarded deletion. | [Read the guide](docs/TeamsChatAdmin.md) |
-| `Remove-Targeted_Section_Memberships.ps1` | Removes non-owner members from CSV-targeted groups and records successful removals. | [Read the guide](docs/Remove-Targeted-Section-Memberships.md) |
+| `Single Script Tools\New-EducationClassTeams.ps1` | Interactively creates activated or non-activated `educationClass` Teams in batches. | [Read the guide](docs/New-EducationClassTeams.md) |
+| `Single Script Tools\GetGroupsBrokenSPO.ps1` | Diagnoses group/site divergence and can explicitly request site provisioning for revalidated missing-site candidates. | [Read the guide](docs/GetGroupsBrokenSPO.md) |
+| `Single Script Tools\IdentifyClassesNoChannelActiivity.ps1` | Reports General-channel user and system/service activity for selected class Teams. | [Read the guide](docs/IdentifyClassesNoChannelActiivity.md) |
+| `Single Script Tools\Remove-Targeted_Section_Memberships.ps1` | Removes non-owner members from CSV-targeted groups and records successful removals. | [Read the guide](docs/Remove-Targeted-Section-Memberships.md) |
+
+## Script Package
+
+| Package | Purpose | Documentation |
+| --- | --- | --- |
+| `Script Packages\TeamsChatAdmin\ChatManagementInterface.ps1` | Launches the PowerShell 7 Teams chat admin module for Graph-backed chat inspection, reporting, deletion previews, and guarded deletion. | [Read the guide](docs/TeamsChatAdmin.md) |
 
 ## General requirements
 

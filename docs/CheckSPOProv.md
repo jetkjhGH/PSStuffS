@@ -74,7 +74,7 @@ also changes the report contract for any downstream automation.
 
 ```powershell
 Set-Location C:\PSSTuffS
-.\CheckSPOProv.ps1
+& '.\legacy-tests\CheckSPOProv.ps1'
 ```
 
 ## Output

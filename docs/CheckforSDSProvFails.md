@@ -55,7 +55,7 @@ Get-MgContext
 
 ```powershell
 Set-Location C:\PSSTuffS
-.\CheckforSDSProvFails.ps1
+& '.\legacy-tests\CheckforSDSProvFails.ps1'
 ```
 
 Example date entry:

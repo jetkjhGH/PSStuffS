@@ -10,8 +10,8 @@ Use this workflow to investigate suspected SDS class provisioning failures witho
 
 ## Choose the Diagnostic
 
-1. Default to [CheckforSDSProvFails.ps1](../../../CheckforSDSProvFails.ps1). It interactively requests an inclusive `yyyy-MM-dd` date range and applies that range in the Exchange query.
-2. Use [CheckSPOProv.ps1](../../../CheckSPOProv.ps1) only for legacy compatibility or a specifically requested fixed date range. It retrieves every Microsoft 365 group, so state the expected tenant-scale impact before running it.
+1. Default to [CheckforSDSProvFails.ps1](../../../legacy-tests/CheckforSDSProvFails.ps1). It interactively requests an inclusive `yyyy-MM-dd` date range and applies that range in the Exchange query.
+2. Use [CheckSPOProv.ps1](../../../legacy-tests/CheckSPOProv.ps1) only for legacy compatibility or a specifically requested fixed date range. It retrieves every Microsoft 365 group, so state the expected tenant-scale impact before running it.
 3. Read the selected script's existing guide before recommending commands: [date-scoped diagnostic guide](../../../docs/CheckforSDSProvFails.md) or [legacy diagnostic guide](../../../docs/CheckSPOProv.md).
 
 ## Preflight
@@ -54,7 +54,7 @@ Use this workflow to investigate suspected SDS class provisioning failures witho
    ```powershell
    $tokens = $null
    $errors = $null
-   [System.Management.Automation.Language.Parser]::ParseFile('.\CheckforSDSProvFails.ps1', [ref] $tokens, [ref] $errors) | Out-Null
+   [System.Management.Automation.Language.Parser]::ParseFile('.\legacy-tests\CheckforSDSProvFails.ps1', [ref] $tokens, [ref] $errors) | Out-Null
    $errors
    ```
 

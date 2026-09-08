@@ -68,7 +68,7 @@ Open PowerShell in the repository folder:
 
 ```powershell
 Set-Location C:\PSSTuffS
-.\New-EducationClassTeams.ps1
+& '.\Single Script Tools\New-EducationClassTeams.ps1'
 ```
 
 The script prompts for:
@@ -84,7 +84,7 @@ The script prompts for:
 ### Preview without creating anything
 
 ```powershell
-.\New-EducationClassTeams.ps1 -WhatIf
+& '.\Single Script Tools\New-EducationClassTeams.ps1' -WhatIf
 ```
 
 `-WhatIf` still asks the interactive questions and displays the planned operations, but it
@@ -93,7 +93,7 @@ does not create groups or Teams.
 ### Request confirmation for each operation
 
 ```powershell
-.\New-EducationClassTeams.ps1 -Confirm
+& '.\Single Script Tools\New-EducationClassTeams.ps1' -Confirm
 ```
 
 ## Naming tokens

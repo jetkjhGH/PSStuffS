@@ -40,7 +40,7 @@ member, and message access can still be denied for individual channels.
 ## Run
 
 ```powershell
-.\IdentifyClassesNoChannelActiivity.ps1
+& '.\Single Script Tools\IdentifyClassesNoChannelActiivity.ps1'
 ```
 
 Choose one input method when prompted:

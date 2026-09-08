@@ -59,13 +59,13 @@ These commands are for maintainers or admins running from the repository source 
 Default launch prompts you to choose whether to continue in the terminal or use the optional Windows GUI when Windows Forms is available:
 
 ```powershell
-.\ChatManagementInterface.ps1
+.\'Script Packages\TeamsChatAdmin\ChatManagementInterface.ps1'
 ```
 
 Terminal mode:
 
 ```powershell
-.\ChatManagementInterface.ps1 -UiMode Terminal
+.\'Script Packages\TeamsChatAdmin\ChatManagementInterface.ps1' -UiMode Terminal
 ```
 
 On startup, the interface shows Graph connection status, read capability, deletion permission status, deletion workflow status, and the audit path. If deletion permission is present, the interface asks whether to enable deletion workflows for the current session. Choosing read-only mode leaves deletion and restore commands unavailable from the menu until option 9 enables them.
@@ -73,7 +73,7 @@ On startup, the interface shows Graph connection status, read capability, deleti
 Windows GUI mode, when Windows Forms is available:
 
 ```powershell
-.\ChatManagementInterface.ps1 -UiMode Windows
+.\'Script Packages\TeamsChatAdmin\ChatManagementInterface.ps1' -UiMode Windows
 ```
 
 The Windows GUI keeps normal selections, chat listing, single-chat inspection, bulk inspection, delete, restore, audit viewing, and help output inside the GUI. Enable deletion and restore workflows from the Status panel when the current Graph context has deletion permission. List, inspect, bulk, delete, and restore inputs/results are preserved while moving between panels. Selecting a row in List Chats stores that chat as the current selection; Inspect One Chat and Delete Chat can both use that current chat ID. The Delete Chat panel can preview and delete a chat with exact typed confirmation in a full-width confirmation dialog for long chat IDs. The Restore Chat panel can load audit-log candidates or accept a pasted deleted chat ID, preview the restore, and execute it with typed confirmation. Terminal mode remains the cross-platform fallback.
@@ -81,7 +81,7 @@ The Windows GUI keeps normal selections, chat listing, single-chat inspection, b
 Noninteractive capability check:
 
 ```powershell
-.\ChatManagementInterface.ps1 -NonInteractive
+.\'Script Packages\TeamsChatAdmin\ChatManagementInterface.ps1' -NonInteractive
 ```
 
 From the terminal menu, enter `G` to open the Windows GUI without restarting the tool. Existing session state, including the last chat list and deletion/restore mode, is passed into the GUI.
@@ -118,7 +118,7 @@ The package script validates staged PowerShell files with the parser before crea
 List chats for a user:
 
 ```powershell
-Import-Module .\src\TeamsChatAdmin.psd1 -Force
+Import-Module '.\Script Packages\TeamsChatAdmin\src\TeamsChatAdmin.psd1' -Force
 Get-TeamsChatByUser -UserId user@contoso.edu -IncludeLastMessagePreview -All
 ```
 

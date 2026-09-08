@@ -100,7 +100,7 @@ The inline administrator comments describe these stages:
 
 ```powershell
 Set-Location C:\PSSTuffS
-& '.\Create Graph API Teams (Class Teams - SDS Options).ps1'
+& '.\legacy-tests\Create Graph API Teams (Class Teams - SDS Options).ps1'
 ```
 
 The call operator (`&`) is useful because the file name contains spaces and parentheses.
