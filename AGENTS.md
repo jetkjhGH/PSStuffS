@@ -27,6 +27,7 @@ This repository contains interactive PowerShell utilities for Microsoft 365 educ
 
 - After the operator confirms they have authenticated to a test tenant, run the changed creation script with `-WhatIf` yourself and report the output; never run it against an unconfirmed session, and never run the script without `-WhatIf`.
 - Do not run tenant-writing paths, sign-in commands, or broad tenant reports automatically. Ask the operator to authenticate and choose the target tenant/date range.
+- When changing `Script Packages\TeamsChatAdmin\`, `docs\TeamsChatAdmin-Distribution.md`, or `tools\Publish-TeamsChatAdminPackage.ps1`, rebuild the distributable package before finishing with `./tools/Publish-TeamsChatAdminPackage.ps1`. Verify the refreshed `dist\TeamsChatAdmin-<version>.zip` contains changed package files and that the staged module imports in PowerShell 7. Do not leave source changes without updating the tracked `dist` folder and ZIP.
 
 ## Script guides
 

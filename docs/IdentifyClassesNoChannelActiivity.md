@@ -1,5 +1,7 @@
 # IdentifyClassesNoChannelActiivity.ps1
 
+Script: [Single Script Tools\IdentifyClassesNoChannelActiivity.ps1](../Single%20Script%20Tools/IdentifyClassesNoChannelActiivity.ps1)
+
 ## Purpose
 
 `IdentifyClassesNoChannelActiivity.ps1` reports whether the General channel in selected class

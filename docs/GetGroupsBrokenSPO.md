@@ -1,5 +1,7 @@
 # GetGroupsBrokenSPO.ps1
 
+Script: [Single Script Tools\GetGroupsBrokenSPO.ps1](../Single%20Script%20Tools/GetGroupsBrokenSPO.ps1)
+
 ## Purpose
 
 `GetGroupsBrokenSPO.ps1` investigates Microsoft 365 groups created within an operator-selected

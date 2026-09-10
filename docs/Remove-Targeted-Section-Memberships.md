@@ -1,5 +1,7 @@
 # Remove-Targeted_Section_Memberships.ps1
 
+Script: [Single Script Tools\Remove-Targeted_Section_Memberships.ps1](../Single%20Script%20Tools/Remove-Targeted_Section_Memberships.ps1)
+
 ## Purpose
 
 `Remove-Targeted_Section_Memberships.ps1` removes every non-owner user member from each Microsoft

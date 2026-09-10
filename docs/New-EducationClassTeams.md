@@ -1,5 +1,7 @@
 # New-EducationClassTeams.ps1
 
+Script: [Single Script Tools\New-EducationClassTeams.ps1](../Single%20Script%20Tools/New-EducationClassTeams.ps1)
+
 ## Purpose
 
 `New-EducationClassTeams.ps1` interactively creates one or more Microsoft Teams based on
